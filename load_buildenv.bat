@@ -1,0 +1,1 @@
+docker run --rm -v ${PWD}:/piutools -it piutools_buildenv bash
