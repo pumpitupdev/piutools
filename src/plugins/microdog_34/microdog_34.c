@@ -42,8 +42,8 @@ int md34_open(const char *pathname, int flags) {
 }
 
 static HookEntry entries[] = {
-    {"libc.so.6","ioctl",(void*)md34_ioctl,(void*)&next_ioctl},
-    {"libc.so.6","open",(void*)md34_open,(void*)&next_open}  
+    {"libc.so.6","ioctl",(void*)md34_ioctl,(void*)&next_ioctl,1},
+    {"libc.so.6","open",(void*)md34_open,(void*)&next_open,1}  
 };
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){

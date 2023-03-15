@@ -57,8 +57,8 @@ static int parse_config(void* user, const char* section, const char* name, const
 }
 
 static HookEntry entries[] = {
-    {"libc.so.6","open",(void*)libusb0_open,(void*)&next_open},
-    {"libc.so.6","fopen",(void*)libusb0_fopen,(void*)&next_fopen}
+    {"libc.so.6","open",(void*)libusb0_open,(void*)&next_open,1},
+    {"libc.so.6","fopen",(void*)libusb0_fopen,(void*)&next_fopen,1}
 };
 
 int plugin_init(const char* config_path, PHookEntry *hook_entry_table){

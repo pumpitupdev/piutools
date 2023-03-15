@@ -17,7 +17,7 @@ typedef struct _PATH_SUBST{
 static unsigned int num_subst_paths = 0;
 static PathSubst sub_paths[100];
 
-
+#define DEBUG_REDIRECT 1
 
 typedef FILE* (*fopen_t)(const char*, const char*);
 fopen_t next_fopen;
@@ -27,6 +27,10 @@ typedef int (*open_func_t)(const char *, int);
 open_func_t next_open;
 
 int redirect_fs_open(const char *pathname, int flags) {
+    #ifdef DEBUG_REDIRECT
+        if(pathname){printf("[%s] %s\n",__FUNCTION__,pathname);}
+    #endif
+    
     for(int i=0;i<num_subst_paths;i++){
         if(strncmp(pathname,sub_paths[i].src_path,strlen(sub_paths[i].src_path)) == 0){
             char n_path[1024] = {0x00};
@@ -38,6 +42,9 @@ int redirect_fs_open(const char *pathname, int flags) {
 }
 
 FILE * redirect_fs_fopen(const char * filename, const char * mode){
+    #ifdef DEBUG_REDIRECT
+        if(filename){printf("[%s] %s\n",__FUNCTION__,filename);}
+    #endif
     for(int i=0;i<num_subst_paths;i++){
         if(strncmp(filename,sub_paths[i].src_path,strlen(sub_paths[i].src_path)) == 0){
             char n_path[1024] = {0x00};
@@ -49,8 +56,8 @@ FILE * redirect_fs_fopen(const char * filename, const char * mode){
 }
 
 static HookEntry entries[] = {
-    {"libc.so.6","open",(void*)redirect_fs_open,(void*)&next_open},
-    {"libc.so.6","fopen",(void*)redirect_fs_fopen,(void*)&next_fopen}
+    {"libc.so.6","open",(void*)redirect_fs_open,(void*)&next_open,1},
+    {"libc.so.6","fopen",(void*)redirect_fs_fopen,(void*)&next_fopen,1}
 };
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){    

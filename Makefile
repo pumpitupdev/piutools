@@ -12,7 +12,7 @@ loader:
 	cc -shared -m32 -fPIC src/piutools_loader.c $(PLUGIN_INCLUDES) -ldl -o $(BUILD_ROOT)/piutools.so
 
 # --- Plugins ---
-plugins: asound.plugin  ata_hdd.plugin microdog_34.plugin s3d_opengl.plugin deadlock.plugin  filesystem_redirect.plugin ticket_dispenser.plugin io_x11_ckdur.plugin
+plugins: asound.plugin  ata_hdd.plugin microdog_34.plugin s3d_opengl.plugin deadlock.plugin  filesystem_redirect.plugin ticket_dispenser.plugin usbfs_null.plugin io_x11_ckdur.plugin
 
 asound.plugin:
 	cc -shared -m32 -fPIC src/plugins/asound/asound.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
@@ -25,6 +25,9 @@ deadlock.plugin:
 
 ioport.plugin:
 	cc -shared -m32 -fPIC src/plugins/ioport/ioport.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+locale.plugin:
+	cc -shared -m32 -fPIC src/plugins/locale/locale.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 
 io_x11_ckdur.plugin:

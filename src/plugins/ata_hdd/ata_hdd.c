@@ -56,9 +56,29 @@ static int load_hdd_info(void){
     return 1;
 }
 
+/* 
+    NX had a couple of images (v1.05 so far) that, for whatever reason, 
+    used a HDD where the model number had leading spaces which isn't ATA spec.
+    This is clearly how the reporting was supposed to work considering the drive info
+    on disk is the same, yet the game's hdd check routine fails on reading this for whatever reason.
+    Instead, for... who knows why, if the leading space is swapped for trailing space and you start
+    the buffer with the model number, it validates... wtf...
+*/
+void do_nx_hdd_fix(void) {
+    unsigned char new_model[0x14] = {0x20};
+    for (int i = 0; i < sizeof(new_model); i++) {
+        if (ATA_INFO_BLOCK[i + 0x14] != ' ') {
+            int remaining_bytes = sizeof(new_model) - i;
+            memcpy(new_model, ATA_INFO_BLOCK + i + 0x14, remaining_bytes);
+            memcpy(ATA_INFO_BLOCK + 0x14, new_model, sizeof(new_model));
+            return;
+        }
+    }
+}
+
 static HookEntry entries[] = {
-    {"libc.so.6","ioctl",(void*)ata_hdd_ioctl,(void*)&next_ioctl},
-    {"libc.so.6","open",(void*)ata_hdd_open,(void*)&next_open}  
+    {"libc.so.6","ioctl",(void*)ata_hdd_ioctl,(void*)&next_ioctl,1},
+    {"libc.so.6","open",(void*)ata_hdd_open,(void*)&next_open,1}  
 };
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){
@@ -71,7 +91,16 @@ static int parse_config(void* user, const char* section, const char* name, const
             if(value == NULL){return 0;}
             realpath(value, ATA_FILE_PATH);          
             return load_hdd_info();
-        }        
+        }  
+
+        if(strcmp(name,"nx_hdd_fix") == 0){
+            if(value == NULL){return 0;}
+            char *ptr; 
+            unsigned long lv = strtoul(value,&ptr,10);
+            if(lv == 1){
+                do_nx_hdd_fix();
+            }                       
+        }                 
     }
     return 1;
 }

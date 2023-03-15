@@ -65,8 +65,8 @@ static int parse_config(void* user, const char* section, const char* name, const
 }
 
 static HookEntry entries[] = {
-    {"libasound.so.2","snd_pcm_open",(void*)asound2_snd_pcm_open,(void*)&next_snd_pcm_open},
-    {"libasound.so.2","snd_pcm_drop",(void*)asound2_snd_pcm_drop,(void*)&next_snd_pcm_drop},
+    {"libasound.so.2","snd_pcm_open",(void*)asound2_snd_pcm_open,(void*)&next_snd_pcm_open,1},
+    {"libasound.so.2","snd_pcm_drop",(void*)asound2_snd_pcm_drop,(void*)&next_snd_pcm_drop,1},
 };
 
 int plugin_init(const char* config_path, PHookEntry *hook_entry_table){

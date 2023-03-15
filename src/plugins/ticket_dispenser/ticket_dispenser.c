@@ -65,8 +65,8 @@ cleanup:
 }
 
 static HCCHookInfoEntry entries[] = {
-    {"libc.so.6","ioctl",(void*)x_ioctl,(void*)&next_ioctl},
-    {"libc.so.6","open",(void*)x_open,(void*)&next_open}
+    {"libc.so.6","ioctl",(void*)x_ioctl,(void*)&next_ioctl,1},
+    {"libc.so.6","open",(void*)x_open,(void*)&next_open,1}
 };
 
 int plugin_init(const char* config_path, PHCCHookInfoEntry *hook_entry_table){

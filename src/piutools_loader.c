@@ -52,6 +52,7 @@ void load_plugin(const char* plugin_name){
     PHookEntry cur_entry;
     for(int j=0;j<num_entries;j++){
         cur_entry = &table[j];
+        if(cur_entry->enabled == 0){continue;}
         void* rfa = hook_function(cur_entry->target_module_name,cur_entry->target_function_name, cur_entry->hook_function_addr);
         if(cur_entry->real_function_addr != NULL){
             *cur_entry->real_function_addr = rfa;

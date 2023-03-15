@@ -285,10 +285,10 @@ void s3d_glTexImage2D(GLenum target, GLint level, GLint internalformat,
 }
 
 static HookEntry entries[] = {
-    {"libX11.so.6","XCreateWindow",(void*)s3d_XCreateWindow,(void*)&next_XCreateWindow},
-    {"libGL.so.1","glDrawPixels",(void*)s3d_glDrawPixels,(void*)&next_glDrawPixels},
-    {"libGLX.so.0","glXSwapBuffers",(void*)s3d_glXSwapBuffers,(void*)&next_glxSwapBuffers},
-    {"libGL.so.1","glTexImage2D",(void*)s3d_glTexImage2D,(void*)&next_glTexImage2D},   
+    {"libX11.so.6","XCreateWindow",(void*)s3d_XCreateWindow,(void*)&next_XCreateWindow,1},
+    {"libGL.so.1","glDrawPixels",(void*)s3d_glDrawPixels,(void*)&next_glDrawPixels,1},
+    {"libGLX.so.0","glXSwapBuffers",(void*)s3d_glXSwapBuffers,(void*)&next_glxSwapBuffers,1},
+    {"libGL.so.1","glTexImage2D",(void*)s3d_glTexImage2D,(void*)&next_glTexImage2D,1},   
 };
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){

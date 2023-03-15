@@ -328,18 +328,18 @@ int x_usb_find_devices(void){
 
 
 static HookEntry entries[] = {
-    {"libusb-0.1.so.4","usb_find_busses",(void*)x_usb_find_busses,NULL},
-    {"libusb-0.1.so.4","usb_find_devices",(void*)x_usb_find_devices,NULL},
-    {"libusb-0.1.so.4","usb_open",(void*)x_usb_open,NULL},
-    {"libusb-0.1.so.4","usb_close",(void*)x_usb_close,NULL},    
-    {"libusb-0.1.so.4","usb_control_msg",(void*)x_usb_control_msg,NULL},
-    {"libX11.so.6","XNextEvent",(void*)x_XNextEvent,(void*)&next_XNextEvent},
-    {"libusb-0.1.so.4","usb_claim_interface",(void*)x_usb_claim_interface,NULL},
-    {"libusb-0.1.so.4","usb_init",(void*)x_usb_init,NULL},                    
-    {"libusb-0.1.so.4","usb_get_busses",(void*)x_usb_get_busses,NULL},
-    {"libusb-0.1.so.4","usb_set_configuration",(void*)x_usb_set_configuration,NULL},
-    {"libusb-0.1.so.4","usb_set_altinterface",(void*)x_usb_set_altinterface,NULL},
-    {"libusb-0.1.so.4","usb_reset",(void*)x_usb_reset,NULL}
+    {"libusb-0.1.so.4","usb_find_busses",(void*)x_usb_find_busses,NULL,1},
+    {"libusb-0.1.so.4","usb_find_devices",(void*)x_usb_find_devices,NULL,1},
+    {"libusb-0.1.so.4","usb_open",(void*)x_usb_open,NULL,1},
+    {"libusb-0.1.so.4","usb_close",(void*)x_usb_close,NULL,1},    
+    {"libusb-0.1.so.4","usb_control_msg",(void*)x_usb_control_msg,NULL,1},
+    {"libX11.so.6","XNextEvent",(void*)x_XNextEvent,(void*)&next_XNextEvent,1},
+    {"libusb-0.1.so.4","usb_claim_interface",(void*)x_usb_claim_interface,NULL,1},
+    {"libusb-0.1.so.4","usb_init",(void*)x_usb_init,NULL,1},                    
+    {"libusb-0.1.so.4","usb_get_busses",(void*)x_usb_get_busses,NULL,1},
+    {"libusb-0.1.so.4","usb_set_configuration",(void*)x_usb_set_configuration,NULL,1},
+    {"libusb-0.1.so.4","usb_set_altinterface",(void*)x_usb_set_altinterface,NULL,1},
+    {"libusb-0.1.so.4","usb_reset",(void*)x_usb_reset,NULL,1}
 };
 
 int plugin_init(const char* config_path, PHookEntry *hook_entry_table){

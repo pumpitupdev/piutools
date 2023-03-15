@@ -69,7 +69,7 @@ static int (*real_XPending)(int *display)=NULL;
 
 // Deadlock Patches - Sigaction Swap
 void sigalrm_sigaction(int signum, struct sigaction *act, struct sigaction *oldact) {
-    if(signum == SIGSEGV){return;}
+   // if(signum == SIGSEGV){return;}
     if (signum == SIGALRM && act != NULL && act->sa_handler != NULL) {
         next_sigaction_handler = act->sa_handler;
         act->sa_handler = empty_handler;
@@ -85,8 +85,8 @@ int sigalrm_XPending(int *display){
 
 
 static HookEntry entries[] = {
-    {"libX11.so.6","XPending",(void*)sigalrm_XPending,(void*)&real_XPending},
-    {"libc.so.6","sigaction",(void*)sigalrm_sigaction,(void*)&next_sigaction}
+    {"libX11.so.6","XPending",(void*)sigalrm_XPending,(void*)&real_XPending,1},
+    {"libc.so.6","sigaction",(void*)sigalrm_sigaction,(void*)&next_sigaction,1}
 };
 
 int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
