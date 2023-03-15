@@ -17,7 +17,7 @@ typedef struct _PATH_SUBST{
 static unsigned int num_subst_paths = 0;
 static PathSubst sub_paths[100];
 
-#define DEBUG_REDIRECT 1
+//#define DEBUG_REDIRECT 1
 
 typedef FILE* (*fopen_t)(const char*, const char*);
 fopen_t next_fopen;

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <pthread.h>
+
 // X11 Stuff
 #include <X11/Xlib.h>
 
@@ -12,8 +14,7 @@
 #include <GL/glx.h>
 
 // For Frame Limiter
-#include <unistd.h> 
-#include <sys/time.h>
+#include <time.h>
 
 #include <plugin_sdk/ini.h>
 #include <plugin_sdk/dbg.h>
@@ -31,6 +32,7 @@ static XCreateWindow_t next_XCreateWindow;
 static glxSwapBuffers_t next_glxSwapBuffers;
 static glDrawPixels_t next_glDrawPixels;
 static GLTexImage2D_t next_glTexImage2D;
+static pthread_t window_change_event_thread;
 
 enum GFX_S3D_SCALING_MODES{
     GFX_SCALING_MODE_NONE,
@@ -73,27 +75,31 @@ static unsigned int last_swap_time = 0;
 // -- HELPERS --
 
 // Typical sleep until elapsed exit time
-static void wait_frame_limit(unsigned int fps){
-    unsigned int current_time = 0;
-    unsigned int swap_interval_usec = 1000000 / fps; // swap every 1/60th of a second
-    // Wait until it's time to swap again
-    do {
-        // Get the current time
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        current_time = tv.tv_sec * 1000000 + tv.tv_usec;
+static void wait_frame_limit(unsigned int fps) {
+    static struct timespec last_swap_time = {0, 0};
 
-        // Calculate the time elapsed since the last swap
-        unsigned int elapsed_usec = current_time - last_swap_time;
+    if (fps == 0) {
+        return;
+    }
 
-        // If less than 1/60th of a second has elapsed, wait
-        if (elapsed_usec < swap_interval_usec) {
-            usleep(swap_interval_usec - elapsed_usec);
-        }
-    } while (current_time - last_swap_time < swap_interval_usec);
+    unsigned int swap_interval_nsec = 1000000000 / fps;
+    struct timespec current_time;
+    struct timespec wait_time;
 
-    // Record the time of this swap
-    last_swap_time = current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+
+    // Calculate the time elapsed since the last swap
+    unsigned int elapsed_nsec = (current_time.tv_sec - last_swap_time.tv_sec) * 1000000000
+                                 + (current_time.tv_nsec - last_swap_time.tv_nsec);
+
+    if (elapsed_nsec < swap_interval_nsec) {
+        wait_time.tv_sec = (swap_interval_nsec - elapsed_nsec) / 1000000000;
+        wait_time.tv_nsec = (swap_interval_nsec - elapsed_nsec) % 1000000000;
+
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &wait_time, NULL);
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &last_swap_time);
 }
 
 static void calculate_zoom_factors(int src_width, int src_height, int dest_width, int dest_height, float *zoom_x, float *zoom_y) {
@@ -114,6 +120,7 @@ static void GetCurrentWindowDimensions(Display *dpy, GLXDrawable drawable){
     calculate_zoom_factors(initial_display_width,initial_display_height,target_display_width,target_display_height,&zoom_factor_x,&zoom_factor_y);
   }
 }
+
 
 
 // A modified version of the S3DResize function from the engine to support multimode adjustment.
@@ -150,6 +157,37 @@ static void S3DResizeEx(void){
   glOrtho(0.0f, initial_display_width, 0.0f, initial_display_height, -500.0f, 500.0f);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+}
+
+
+void *handle_window_events(void *arg) {
+    Display *dpy = (Display *)arg;
+    XEvent event;
+
+    while (1) {
+        XNextEvent(dpy, &event);
+
+        if (event.type == ConfigureNotify) {
+            XConfigureEvent xce = event.xconfigure;
+
+            // Check if the window size changed.
+            if (xce.width != target_display_width || xce.height != target_display_height) {
+                target_display_width = xce.width;
+                target_display_height = xce.height;
+
+
+                // Recalculate Zoom Factor
+                calculate_zoom_factors(initial_display_width,initial_display_height,target_display_width,target_display_height,&zoom_factor_x,&zoom_factor_y);
+                // Update your zoom level or perform other actions based on the new dimensions.
+                
+            }                            
+            }
+        }
+
+        // Process other events.
+
+
+    return NULL;
 }
 
 static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsigned int width,unsigned int height,unsigned int border_width,int depth,unsigned int _class,Visual *visual,unsigned long valuemask,XSetWindowAttributes *attributes){
@@ -191,7 +229,14 @@ static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsig
         height = target_display_height;
     }
 
-    return next_XCreateWindow(display,parent,x,y,width,height,border_width,depth,_class,visual,valuemask,attributes);
+    Window res = next_XCreateWindow(display,parent,x,y,width,height,border_width,depth,_class,visual,valuemask,attributes);
+    // Incorporate Threaded Window Listener - Doesn't work right with pillbox
+ //   if(options_gfx_s3d.resizable_window){
+ //     pthread_create(&window_change_event_thread, NULL, handle_window_events, (void *)display);
+ //   }
+    
+
+    return res;
 }
 
  #ifndef GL_UNSIGNED_SHORT_5_6_5
