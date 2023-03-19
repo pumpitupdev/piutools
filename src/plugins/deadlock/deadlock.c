@@ -26,78 +26,91 @@
  * issues which are related to audio playback in combination with decoding a
  * video.
  */
-#include <signal.h>
 
-#include <unistd.h>
+
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+// For Signal Stuff
+#include <signal.h>
+
+// For XPending
+#include <X11/Xlib.h>
 
 #include <plugin_sdk/ini.h>
 #include <plugin_sdk/dbg.h>
 #include <plugin_sdk/plugin.h>
 
-#define SIGHAX_SIGSEGV 0x1337
 
-typedef void (*sighandler_t)(int);
+
+
+
+typedef int (*XPending_t)(Display *);
 typedef void (*sigaction_t)(int signum, struct sigaction *act, struct sigaction *oldact);
+typedef void (*sighandler_t)(int);
 
-static sighandler_t next_sigaction_handler = NULL;
+static XPending_t next_XPending;
 static sigaction_t next_sigaction;
-void empty_handler(int signum) {
-    // Do nothing
-}
 
+static sighandler_t timer_driver = NULL;
 
-// Destination address of the timer thread.
-static void* deadlock_timer_drive_addr = NULL;
 
 // Replacement signal handler to keep the sigcall happy.
-
-
-// Replacement signal driver.
-void drive_timer(){
-    if(next_sigaction_handler!=NULL){        
-        next_sigaction_handler(SIGALRM);
-    }
-}
-
-
-static int (*real_XPending)(int *display)=NULL;
-
-void deadlock_swap_timer_handler(struct sigaction* act){
-        if(act != NULL && act->sa_handler != NULL){
-            next_sigaction_handler = act->sa_handler;
-            act->sa_handler = empty_handler;
-        }
-}
+static void empty_sigalrm_handler(int mysignal, siginfo_t *si, void* arg){}
 
 // Deadlock Patches - Sigaction Swap
-void sigalrm_sigaction(int signum, struct sigaction *act, struct sigaction *oldact) {
-    // We're also going to shut off the SIGSEV Handler by default.
+void deadlock_sigalrm(int signum, struct sigaction *act, struct sigaction *oldact) {
+    // Block SIGALRM Calls after replacing our timer driver.
+    if (signum == SIGALRM) {
+        if(timer_driver == NULL){
+            if(act != NULL && act->sa_handler != NULL){
+                timer_driver = act->sa_handler;
+                act->sa_handler = (sighandler_t)empty_sigalrm_handler;
+            }
+        }
+    }
+    // Block SIGSEGV
     if(signum == SIGSEGV){return;}
-    if(signum == SIGHAX_SIGSEGV){
+    if(signum == (SIGHAX | SIGSEGV)){
         signum = SIGSEGV;
     }
-    if (signum == SIGALRM) {
-        deadlock_swap_timer_handler(act);
-    }
+    // Allow a replacement bypass of the empty handler in case we want to use this later.
+    if(signum == (SIGHAX | SIGALRM)){signum = SIGALRM;}    
     return next_sigaction(signum,act,oldact);    
 }
 
 // Deadlock Patches - Calling timer driver from Main thread
-int sigalrm_XPending(int *display){
-    drive_timer();
-    return real_XPending(display);
+int deadlock_XPending(Display *dpy){
+    if(timer_driver!=NULL){timer_driver(SIGALRM);}
+    return next_XPending(dpy);
 }
 
 
 static HookEntry entries[] = {
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6", "XPending", sigalrm_XPending, &real_XPending, 1),
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "sigaction", sigalrm_sigaction, &next_sigaction, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6", "XPending", deadlock_XPending, &next_XPending, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "sigaction", deadlock_sigalrm, &next_sigaction, 1),
     {}    
 };
 
+static int parse_config(void* user, const char* section, const char* name, const char* value){
+    if(strcmp(section,"DEADLOCK") == 0){
+        if(strcmp(name,"sigalrm_fix") == 0){
+            char *ptr;            
+            if(value != NULL){
+              entries[0].hook_enabled = (strtoul(value,&ptr,10) == 1);
+              entries[1].hook_enabled = entries[0].hook_enabled;
+            }
+        }
+    }
+    return 1;
+}
+
 const PHookEntry plugin_init(const char* config_path){
-    DBG_printf("[%s] Linux 2.4.x Deadlock Fix Enabled.",__FILE__);  
+    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+    // We'll set up our own handler 
+    if(entries[0].hook_enabled){    
+        DBG_printf("[%s] Linux 2.4.x Deadlock SIGALRM Fix Enabled.",__FILE__);  
+    }
     return entries;
 }

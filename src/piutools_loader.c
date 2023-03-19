@@ -18,8 +18,6 @@ hook_func_byname_t hook_function_byname;
 hook_import_byname_t hook_import_byname;
 hook_func_t hook_function;
 
-static char piutools_root[PATH_MAX] = {0x00};
-static char plugin_config_path[PATH_MAX] = {0x00};
 static const char* hook_library_name = "libflh.so";
 
 
@@ -40,13 +38,13 @@ static int get_function_address(const char* library_name, const char* function_n
 
 void load_plugin(const char* plugin_name){
     char plugin_file_path[PATH_MAX] = {0x00}; 
-    sprintf(plugin_file_path,"%s/plugins/%s.plugin",piutools_root,plugin_name);
+    piutools_get_plugin_path(plugin_name,plugin_file_path);
     DBG_printf("[%s:%s] Loading Plugin: %s",__FILE__,__FUNCTION__, plugin_name);    
     plugin_init_t plugin_init;
     if(get_function_address(plugin_file_path,"plugin_init",(void**)&plugin_init) == 0){return;}
 
     // Run our init function to get the entry table and number of entries.
-    PHookEntry cur_entry = plugin_init(plugin_config_path);
+    PHookEntry cur_entry = plugin_init(piutools_game_config_path);
 
     if (cur_entry != NULL) {
         while (cur_entry->hook_type != HOOK_ENTRY_END) {
@@ -108,23 +106,15 @@ static int loader_initialized = 0;
 void __attribute__((constructor)) PPL_Init() {
     if(loader_initialized){return;}
     loader_initialized = 1;
-
+    printf("HI 1\n");
     // Set up PIUTOOLS Root
-    char* piutools_root_path = getenv("PIUTOOLS_ROOT");
-    if(piutools_root_path == NULL){
-        realpath(".",piutools_root);
-    }else{
-        strcpy(piutools_root,piutools_root_path);
-    }
-
-    if(piutools_root[strlen(piutools_root)] == '/'){
-        piutools_root[strlen(piutools_root)] = 0x00;
-    }
-
+    piutools_init_sdk();
+    printf("HI 2\n");
     // Set Hook Library Path
     char hook_library_path[1024] = {0x00};
-    sprintf(hook_library_path,"%s/%s",piutools_root,hook_library_name);
-    //printf("Looking for Hook Library at: %s\n",hook_library_path);
+    printf("%s %s\n",piutools_root_path,hook_library_name);
+    sprintf(hook_library_path,"%s/%s",piutools_root_path,hook_library_name);
+    printf("HI 3\n");
     // First - Get Hook Entrypoint
     if(!get_function_address(hook_library_path,"flh_inline_hook_byname",(void**)&hook_function_byname)){
         printf("Error Resolving flh_inline_hook_byname From Library!\n");
@@ -141,14 +131,7 @@ void __attribute__((constructor)) PPL_Init() {
         return;
     }
 
-    // Read our Configuration from the path denoted in PPL_CONF or locally via ppl.conf.
-    char* config_path = getenv("PIUTOOLS_CONFIG");
-    if(config_path == NULL){
-        config_path = "./piutools.ini";
-        
-    }
-    realpath(config_path, plugin_config_path);
-    ini_parse(plugin_config_path,parse_loader_config,NULL);
+    ini_parse(piutools_game_config_path,parse_loader_config,NULL);
 }
 
 

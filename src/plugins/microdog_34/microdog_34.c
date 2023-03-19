@@ -50,12 +50,8 @@ static int parse_config(void* user, const char* section, const char* name, const
     if(strcmp(section,"MICRODOG_34") == 0){
         if(strcmp(name,"file") == 0){
             if(value == NULL){return 0;}
-            if(value[0] == '.'){
-                realpath(value,dongle_file_path);
-            }else{
-                strncpy(dongle_file_path,value,sizeof(dongle_file_path));
-            }
-            
+            piutools_resolve_path(value,dongle_file_path);    
+            DBG_printf("[%s] MicroDog 34 Dongle File Loaded: %s",__FILE__,dongle_file_path);        
             MicroDog_Init(dongle_file_path);
             return 1;
         }

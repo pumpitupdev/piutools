@@ -24,8 +24,6 @@ typedef struct _PATH_SUBST{
 static unsigned int num_subst_paths = 0;
 static PathSubst sub_paths[100];
 
-static char GAME_VERSION_ROOT[1024];
-#define GAME_VERSION_ROOT_TAG "$(GAME_VERSION)"
 #define SEARCH_ANY_TAG "{*}"
 #define SEARCH_FILE_TAG "{F}"
 //#define DEBUG_REDIRECT 1
@@ -119,19 +117,10 @@ static int parse_config(void* user, const char* section, const char* name, const
 
         sub_paths[num_subst_paths].src_path = malloc(strlen(name)+1);
         strcpy(sub_paths[num_subst_paths].src_path,name);
+        // We may have to deal with piutools wildcards for resolved paths so let's do that.
         char resolved_path[1024] = {0x00};
-
-        if(strncmp(value,GAME_VERSION_ROOT_TAG,strlen(GAME_VERSION_ROOT_TAG)) == 0){
-            sprintf(resolved_path,"%s%s",GAME_VERSION_ROOT,value+strlen(GAME_VERSION_ROOT_TAG));
-            value = resolved_path;
-        }
-
-
-        // Value may be a relative path - we'll account for this here.        
-        if(value[0] == '.'){            
-            realpath(value, resolved_path);   
-            value = resolved_path;
-        }
+        piutools_resolve_path(value,resolved_path);
+        if(strlen(resolved_path) > 1){value = resolved_path;}
         
         sub_paths[num_subst_paths].replacement_path = malloc(strlen(value)+1);
         strcpy(sub_paths[num_subst_paths].replacement_path,value);
@@ -142,13 +131,6 @@ static int parse_config(void* user, const char* section, const char* name, const
 }
 
 const PHookEntry plugin_init(const char* config_path){
-    // Get Game Version Root First if Available
-
-    if(getenv("GAME_VERSION_ROOT") != NULL){
-        realpath(getenv("GAME_VERSION_ROOT"),GAME_VERSION_ROOT);
-        DBG_printf("[%s] Game Version Root: %s\n",__FILE__,GAME_VERSION_ROOT);
-    }
-
     if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
     return entries;
 }

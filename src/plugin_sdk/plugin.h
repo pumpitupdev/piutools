@@ -23,3 +23,17 @@ typedef struct _HOOK_ENTRY {
 
 // Template Interface for Plugins
 typedef const PHookEntry (*plugin_init_t)(const char* config_path);
+
+// Bypass Flag for SIGNALs
+#define SIGHAX 0x13370000
+
+void piutools_resolve_path(const char* in_path, char* out_path);
+void piutools_init_sdk(void);
+void piutools_get_plugin_path(const char* plugin_name, char* plugin_path);
+
+extern char piutools_game_rom_path[1024];
+extern char piutools_game_version_path[1024];
+extern char piutools_game_config_path[1024];
+extern char piutools_game_save_path[1024];
+extern char piutools_plugin_path[1024];
+extern char piutools_root_path[1024];
