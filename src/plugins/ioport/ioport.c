@@ -10,10 +10,12 @@
 #include <plugin_sdk/dbg.h>
 #include <plugin_sdk/plugin.h>
 
+#define SIGHAX_SIGSEGV 0x1337
+
 /*
 Note - This plugin involves messing with the signal handlers so it has to be enabled before the deadlock handler.
 */
-static void ioport_handler(int mysignal, siginfo_t *si, void* arg){    
+static void ioport_handler(int mysignal, siginfo_t *si, void* arg){  
   ucontext_t *context = (ucontext_t *)arg;    
   unsigned int eip_val = context->uc_mcontext.gregs[REG_EIP];
   // -- Handle OUT 0x80,AL -- 
@@ -30,14 +32,11 @@ void IOPort_Init(){
   action.sa_sigaction = &ioport_handler;
   action.sa_flags = SA_SIGINFO;
   // Technically this should be SIGILL but whatever
-  sigaction(SIGSEGV,&action,NULL);    
+  sigaction(SIGHAX_SIGSEGV,&action,NULL);    
 }
 
-
-
-
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
+const PHookEntry plugin_init(const char* config_path){  
     IOPort_Init();
-    DBG_printf("[%s] IOPort Fixes Enabled",__FILE__);
-    return 0;
+    DBG_printf("[%s] IOPort Fixes Enabled",__FILE__);    
+    return NULL;
 }

@@ -8,17 +8,18 @@
 
 typedef int (*snd_pcm_open_t)(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode);
 static snd_pcm_open_t next_snd_pcm_open;
+
 typedef int (*snd_pcm_drop_t)(snd_pcm_t *pcm);
 static snd_pcm_drop_t next_snd_pcm_drop;
 
 static char patch_sound_dev_name[256];
-static char sound_pcm_drop_disable = 0;
 
-int asound2_snd_pcm_open(snd_pcm_t **pcmp, const char *name, snd_pcm_stream_t stream, int mode){    
+
+static int asound2_snd_pcm_open(snd_pcm_t **pcmp, const char *name, snd_pcm_stream_t stream, int mode){    
   int ret = 0;
   int retry_count = 5;
   // Replace the Sound Device Name
-  if (patch_sound_dev_name) {name = patch_sound_dev_name;}
+  if (strlen(patch_sound_dev_name) > 1) {name = patch_sound_dev_name;}
 
   /*
      Notes about exceed and how it fucked up using alsa:
@@ -28,24 +29,17 @@ int asound2_snd_pcm_open(snd_pcm_t **pcmp, const char *name, snd_pcm_stream_t st
   */
 
   /* Using dmix instead of hw:0 on exceed, snd_pcm_open sometimes returns
-     with a bad fd but after another retry, everything's fine */
-  while (retry_count > 0) {
-    ret = next_snd_pcm_open(pcmp, name, stream, mode);
-
-    if (ret < 0) {
-      retry_count--;
-    } else {
-      break;
-    }
-  }
-  return ret;
+     with a bad fd but after another retry, everything's fine */ 
+  return next_snd_pcm_open(pcmp, name, stream, mode);
 }
 
-int asound2_snd_pcm_drop(snd_pcm_t*pcm){
-  if(sound_pcm_drop_disable == 1){return 0;}
+static int asound2_snd_pcm_drop(snd_pcm_t*pcm){return 0;}
 
-    return next_snd_pcm_drop(pcm);
-}
+static HookEntry entries[] = {
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libasound.so.2", "snd_pcm_open", asound2_snd_pcm_open, &next_snd_pcm_open, 0),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libasound.so.2", "snd_pcm_drop", asound2_snd_pcm_drop, &next_snd_pcm_drop, 0),
+    {}
+};
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){
     if(strcmp(section,"ASOUND") == 0){
@@ -53,24 +47,19 @@ static int parse_config(void* user, const char* section, const char* name, const
             if(value == NULL){return 0;}
             strncpy(patch_sound_dev_name,value,sizeof(patch_sound_dev_name));
             DBG_printf("[%s] Custom Device Name: %s",__FILE__, patch_sound_dev_name);
+            entries[0].hook_enabled = 1;
         }
         if(strcmp(name,"pcm_drop_fix") == 0){
             char *ptr;            
             if(value != NULL){
-              sound_pcm_drop_disable = strtoul(value,&ptr,10);             
+              entries[1].hook_enabled = strtoul(value,&ptr,10);
             }
         }
     }
     return 1;
 }
 
-static HookEntry entries[] = {
-    {"libasound.so.2","snd_pcm_open",(void*)asound2_snd_pcm_open,(void*)&next_snd_pcm_open,1},
-    {"libasound.so.2","snd_pcm_drop",(void*)asound2_snd_pcm_drop,(void*)&next_snd_pcm_drop,1},
-};
-
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
-    if(ini_parse(config_path,parse_config,NULL) != 0){return 0;}
-  *hook_entry_table = entries;
-  return sizeof(entries) / sizeof(HookEntry);
+const PHookEntry plugin_init(const char* config_path){
+  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+  return entries;
 }

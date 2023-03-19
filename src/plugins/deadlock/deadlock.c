@@ -36,6 +36,7 @@
 #include <plugin_sdk/dbg.h>
 #include <plugin_sdk/plugin.h>
 
+#define SIGHAX_SIGSEGV 0x1337
 
 typedef void (*sighandler_t)(int);
 typedef void (*sigaction_t)(int signum, struct sigaction *act, struct sigaction *oldact);
@@ -45,9 +46,6 @@ static sigaction_t next_sigaction;
 void empty_handler(int signum) {
     // Do nothing
 }
-
-
-
 
 
 // Destination address of the timer thread.
@@ -66,13 +64,22 @@ void drive_timer(){
 
 static int (*real_XPending)(int *display)=NULL;
 
+void deadlock_swap_timer_handler(struct sigaction* act){
+        if(act != NULL && act->sa_handler != NULL){
+            next_sigaction_handler = act->sa_handler;
+            act->sa_handler = empty_handler;
+        }
+}
 
 // Deadlock Patches - Sigaction Swap
 void sigalrm_sigaction(int signum, struct sigaction *act, struct sigaction *oldact) {
-   // if(signum == SIGSEGV){return;}
-    if (signum == SIGALRM && act != NULL && act->sa_handler != NULL) {
-        next_sigaction_handler = act->sa_handler;
-        act->sa_handler = empty_handler;
+    // We're also going to shut off the SIGSEV Handler by default.
+    if(signum == SIGSEGV){return;}
+    if(signum == SIGHAX_SIGSEGV){
+        signum = SIGSEGV;
+    }
+    if (signum == SIGALRM) {
+        deadlock_swap_timer_handler(act);
     }
     return next_sigaction(signum,act,oldact);    
 }
@@ -85,12 +92,12 @@ int sigalrm_XPending(int *display){
 
 
 static HookEntry entries[] = {
-    {"libX11.so.6","XPending",(void*)sigalrm_XPending,(void*)&real_XPending,1},
-    {"libc.so.6","sigaction",(void*)sigalrm_sigaction,(void*)&next_sigaction,1}
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6", "XPending", sigalrm_XPending, &real_XPending, 1),
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "sigaction", sigalrm_sigaction, &next_sigaction, 1),
+    {}    
 };
 
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
-    DBG_printf("[%s] Linux 2.4.x Deadlock Fix Enabled.",__FILE__);
-    *hook_entry_table = entries;
-    return sizeof(entries) / sizeof(HookEntry);
+const PHookEntry plugin_init(const char* config_path){
+    DBG_printf("[%s] Linux 2.4.x Deadlock Fix Enabled.",__FILE__);  
+    return entries;
 }

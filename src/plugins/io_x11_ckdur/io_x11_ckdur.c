@@ -328,23 +328,21 @@ int x_usb_find_devices(void){
 
 
 static HookEntry entries[] = {
-    {"libusb-0.1.so.4","usb_find_busses",(void*)x_usb_find_busses,NULL,1},
-    {"libusb-0.1.so.4","usb_find_devices",(void*)x_usb_find_devices,NULL,1},
-    {"libusb-0.1.so.4","usb_open",(void*)x_usb_open,NULL,1},
-    {"libusb-0.1.so.4","usb_close",(void*)x_usb_close,NULL,1},    
-    {"libusb-0.1.so.4","usb_control_msg",(void*)x_usb_control_msg,NULL,1},
-    {"libX11.so.6","XNextEvent",(void*)x_XNextEvent,(void*)&next_XNextEvent,1},
-    {"libusb-0.1.so.4","usb_claim_interface",(void*)x_usb_claim_interface,NULL,1},
-    {"libusb-0.1.so.4","usb_init",(void*)x_usb_init,NULL,1},                    
-    {"libusb-0.1.so.4","usb_get_busses",(void*)x_usb_get_busses,NULL,1},
-    {"libusb-0.1.so.4","usb_set_configuration",(void*)x_usb_set_configuration,NULL,1},
-    {"libusb-0.1.so.4","usb_set_altinterface",(void*)x_usb_set_altinterface,NULL,1},
-    {"libusb-0.1.so.4","usb_reset",(void*)x_usb_reset,NULL,1}
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_claim_interface", x_usb_claim_interface, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_close", x_usb_close, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_control_msg", x_usb_control_msg, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_find_busses", x_usb_find_busses, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_find_devices", x_usb_find_devices, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_init", x_usb_init, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_open", x_usb_open, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_reset", x_usb_reset, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_set_altinterface", x_usb_set_altinterface, NULL, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libusb-0.1.so.4","usb_set_configuration", x_usb_set_configuration, NULL, 1),                    
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XNextEvent", x_XNextEvent, &next_XNextEvent, 1),       
+    {}
 };
 
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
-    *hook_entry_table = entries;
-    return sizeof(entries) / sizeof(HookEntry);
+const PHookEntry plugin_init(const char* config_path){    
+    return entries;
 }
-
 

@@ -22,11 +22,11 @@ int usbfs_fclose_patch(FILE* fp){
 }
 
 static HookEntry entries[] = {
-    {"libc.so.6","feof",(void*)usbfs_feof_patch,(void*)&real_feof,1},
-    {"libc.so.6","fclose",(void*)usbfs_fclose_patch,(void*)&real_fclose,1}
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "feof", usbfs_feof_patch, &real_feof, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "fclose", usbfs_fclose_patch, &real_fclose, 1),    
+    {}
 };
 
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
-    *hook_entry_table = entries;
-    return sizeof(entries) / sizeof(HookEntry);
+const PHookEntry plugin_init(const char* config_path){
+  return entries;
 }

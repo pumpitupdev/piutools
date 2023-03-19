@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <pthread.h>
 
@@ -183,10 +184,6 @@ void *handle_window_events(void *arg) {
             }                            
             }
         }
-
-        // Process other events.
-
-
     return NULL;
 }
 
@@ -202,9 +199,6 @@ static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsig
         }
     }
 
-    // This is a super hack because glDrawPixels isn't properly resolved unless you're in runtime.
-    next_glDrawPixels = (glDrawPixels_t)glXGetProcAddress((const GLubyte *)"glDrawPixels");
-    next_glTexImage2D = (GLTexImage2D_t)glXGetProcAddress("glTexImage2D");
     // Cache startup dimensions.
     initial_display_width = width;
     initial_display_height = height;
@@ -235,6 +229,8 @@ static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsig
  //     pthread_create(&window_change_event_thread, NULL, handle_window_events, (void *)display);
  //   }
     
+   // next_glDrawPixels = (glDrawPixels_t)glXGetProcAddress((const GLubyte *)"glDrawPixels");
+    //next_glTexImage2D = (GLTexImage2D_t)glXGetProcAddress("glTexImage2D");
 
     return res;
 }
@@ -299,6 +295,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 static void s3d_glXSwapBuffers(Display *dpy, GLXDrawable drawable){
     // If we use a resizable window, we must refresh the target dimensions.
+  
     if (options_gfx_s3d.resizable_window) {
       GetCurrentWindowDimensions(dpy, drawable);
     }
@@ -319,21 +316,20 @@ void s3d_glTexImage2D(GLenum target, GLint level, GLint internalformat,
                      GLsizei width, GLsizei height, GLint border,
                      GLenum format, GLenum type, const void *pixels) {
     // Set the texture wrapping mode to GL_CLAMP_TO_EDGE
-    if(options_gfx_s3d.texture_seam_fix == 1){
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Call the original glTexImage2D function
     next_glTexImage2D(target, level, internalformat, width, height,
                           border, format, type, pixels);
 }
 
-static HookEntry entries[] = {
-    {"libX11.so.6","XCreateWindow",(void*)s3d_XCreateWindow,(void*)&next_XCreateWindow,1},
-    {"libGL.so.1","glDrawPixels",(void*)s3d_glDrawPixels,(void*)&next_glDrawPixels,1},
-    {"libGLX.so.0","glXSwapBuffers",(void*)s3d_glXSwapBuffers,(void*)&next_glxSwapBuffers,1},
-    {"libGL.so.1","glTexImage2D",(void*)s3d_glTexImage2D,(void*)&next_glTexImage2D,1},   
+static HookEntry entries[] = {   
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XCreateWindow", s3d_XCreateWindow, &next_XCreateWindow, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glDrawPixels", s3d_glDrawPixels, &next_glDrawPixels, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapBuffers", s3d_glXSwapBuffers, &next_glxSwapBuffers, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 0),            
+    {}       
 };
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){
@@ -358,7 +354,7 @@ static int parse_config(void* user, const char* section, const char* name, const
             if(value != NULL){options_gfx_s3d.scaling_mode = strtoul(value,&ptr,10);}
         }  
         if(strcmp(name,"texture_seam_fix") == 0){
-            if(value != NULL){options_gfx_s3d.texture_seam_fix = strtoul(value,&ptr,10);}
+            if(value != NULL){entries[3].hook_enabled = strtoul(value,&ptr,10);}
         }                  
         if(strcmp(name,"gl_single_threadfix") == 0){
             if(value != NULL){
@@ -373,35 +369,34 @@ static int parse_config(void* user, const char* section, const char* name, const
     return 1;
 }
 
+const PHookEntry plugin_init(const char* config_path){
+  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
 
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
-    if(ini_parse(config_path,parse_config,NULL) != 0){return 0;}
-    if(options_gfx_s3d.colormap_fix){
-      DBG_printf("[%s] GFX ColorMap Fix Enabled: %d",__FILE__,options_gfx_s3d.colormap_fix);
-    }
-    if(options_gfx_s3d.scaling_mode){
-        DBG_printf("[%s] GFX Scaling Mode Enabled: %d",__FILE__,options_gfx_s3d.scaling_mode);
-    }
+  if(options_gfx_s3d.colormap_fix){
+    DBG_printf("[%s] GFX ColorMap Fix Enabled: %d",__FILE__,options_gfx_s3d.colormap_fix);
+  }
+  if(options_gfx_s3d.scaling_mode){
+      DBG_printf("[%s] GFX Scaling Mode Enabled: %d",__FILE__,options_gfx_s3d.scaling_mode);
+  }
 
-    if(options_gfx_s3d.screen_height || options_gfx_s3d.screen_width){
-        DBG_printf("[%s] GFX Forced Resolution Enabled: %d x %d",__FILE__,options_gfx_s3d.screen_width,options_gfx_s3d.screen_height);
-    }
+  if(options_gfx_s3d.screen_height || options_gfx_s3d.screen_width){
+      DBG_printf("[%s] GFX Forced Resolution Enabled: %d x %d",__FILE__,options_gfx_s3d.screen_width,options_gfx_s3d.screen_height);
+  }
 
-    if(options_gfx_s3d.frame_limit){
-        DBG_printf("[%s] Enabled frame limit: %d FPS",__FILE__,options_gfx_s3d.frame_limit);
-    }
+  if(options_gfx_s3d.frame_limit){
+      DBG_printf("[%s] Enabled frame limit: %d FPS",__FILE__,options_gfx_s3d.frame_limit);
+  }
 
-    if(options_gfx_s3d.resizable_window){
-        DBG_printf("[%s] Enabled resizable Window: %d",__FILE__,options_gfx_s3d.resizable_window);
-    }
-    
-    if(options_gfx_s3d.gl_threadfix == 1){
-        DBG_printf("[%s] Enabled Single Threaded OpenGL Fix",__FILE__);      
-    }
+  if(options_gfx_s3d.resizable_window){
+      DBG_printf("[%s] Enabled resizable Window: %d",__FILE__,options_gfx_s3d.resizable_window);
+  }
+  
+  if(options_gfx_s3d.gl_threadfix == 1){
+      DBG_printf("[%s] Enabled Single Threaded OpenGL Fix",__FILE__);      
+  }
 
-    if(options_gfx_s3d.texture_seam_fix == 1){
-        DBG_printf("[%s] Texture Seam Clamp Fix",__FILE__);      
-    }    
-    *hook_entry_table = entries;
-    return sizeof(entries) / sizeof(HookEntry);
+  if(options_gfx_s3d.texture_seam_fix == 1){
+      DBG_printf("[%s] Texture Seam Clamp Fix",__FILE__);      
+  }      
+  return entries;
 }

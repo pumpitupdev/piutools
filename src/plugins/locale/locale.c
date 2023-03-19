@@ -21,6 +21,9 @@ void hook_core_piu_utils_fix_locale()
   if (unsetenv("LANGUAGE") != 0) {
     DBG_printf("[%s:%s] Unsetting LANGUAGE env var failed.",__FILE__,__FUNCTION__);
   }
+  if (unsetenv("LANG") != 0) {
+    DBG_printf("[%s:%s] Unsetting LANGUAGE env var failed.",__FILE__,__FUNCTION__);
+  }  
 }
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){
@@ -37,7 +40,7 @@ static int parse_config(void* user, const char* section, const char* name, const
     return 1;
 }
 
-int plugin_init(const char* config_path, PHookEntry *hook_entry_table){
+const PHookEntry plugin_init(const char* config_path){  
     ini_parse(config_path,parse_config,NULL);
-    return 0;
+    return NULL;
 }
