@@ -29,6 +29,8 @@ ioport.plugin:
 locale.plugin:
 	cc -shared -m32 -fPIC src/plugins/locale/locale.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
+io_piuinput.plugin:
+	cc -shared -m32 -fPIC src/plugins/io_piuinput/io_piuinput.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 io_x11_ckdur.plugin:
 	cc -shared -m32 -fPIC src/plugins/io_x11_ckdur/io_x11_ckdur.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
