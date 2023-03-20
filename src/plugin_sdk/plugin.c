@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
+#include "ini.h"
+#include "PIUTools_Input.h"
+#include "x11_keyio.h"
+
 char piutools_game_rom_path[1024] = {0x00};
 char piutools_game_version_path[1024] = {0x00};
 char piutools_game_config_path[1024] = {0x00};
@@ -47,6 +51,8 @@ void piutools_get_plugin_path(const char* plugin_name, char* plugin_path){
 }
 
 void piutools_init_sdk(void){
+    
+
     sprintf(piutools_root_path,"%s",getenv("PIUTOOLS_PATH"));
     sprintf(piutools_game_rom_path,"%s/%s",getenv("PIUTOOLS_ROM_PATH"),getenv("PIUTOOLS_GAME_NAME"));
     sprintf(piutools_game_version_path,"%s/version/%s",piutools_game_rom_path,getenv("PIUTOOLS_GAME_VERSION"));
@@ -73,4 +79,7 @@ void piutools_init_sdk(void){
         printf("Plugin Path: %s\n",piutools_plugin_path);        
         exit(-1);
     }
+    // Set up Initial PIUTools Config
+    PIUTools_Input_Reset();
+    X11_KeyIO_Init(piutools_game_config_path);
 }

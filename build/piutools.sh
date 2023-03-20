@@ -105,4 +105,5 @@ export DBGLOG=1
 exe_path=$rom_game_root/version/$game_version/piu
 
 # GOGOGO
+#exec ltrace -e '*' -o /mnt/c/repos/piutools_ltrace.txt $exe_path game
 exec $exe_path game

@@ -23,11 +23,20 @@ ata_hdd.plugin:
 deadlock.plugin:
 	cc -shared -m32 -fPIC src/plugins/deadlock/deadlock.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-ioport.plugin:
-	cc -shared -m32 -fPIC src/plugins/ioport/ioport.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
 locale.plugin:
 	cc -shared -m32 -fPIC src/plugins/locale/locale.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+io_pit.plugin:
+	cc -shared -m32 -fPIC src/plugins/io_pit/io_pit.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+io_am030614.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_am030614/*.c -o $(PLUGIN_BUILD_ROOT)/$@
+
+io_at93c86.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_at93c86/*.c -o $(PLUGIN_BUILD_ROOT)/$@
+	
+io_cat702.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_cat702/*.c -o $(PLUGIN_BUILD_ROOT)/$@
 
 io_piuinput.plugin:
 	cc -shared -m32 -fPIC src/plugins/io_piuinput/io_piuinput.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
