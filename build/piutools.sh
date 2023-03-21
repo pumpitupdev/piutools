@@ -90,6 +90,13 @@ export PIUTOOLS_PLUGIN_PATH=$(realpath "./plugins")
 export PIUTOOLS_CONFIG_PATH=$(realpath "./config")
 # Set a save root to handle machine and user saves.
 export PIUTOOLS_SAVE_PATH=$(realpath "./save")
+# Create save path if it isn't created yet
+game_save_root=$PIUTOOLS_SAVE_PATH/$PIUTOOLS_GAME_NAME/$PIUTOOLS_GAME_VERSION
+if [ ! -e "$game_save_root" ]; then
+  exec mkdir -p -f $game_save_root
+fi
+
+
 # Set a tools ROM root to handle things like hdd files, dongle files, etc.
 export PIUTOOLS_ROM_PATH=$(realpath "./rom")
 

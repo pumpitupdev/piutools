@@ -26,23 +26,24 @@ deadlock.plugin:
 locale.plugin:
 	cc -shared -m32 -fPIC src/plugins/locale/locale.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-io_pit.plugin:
-	cc -shared -m32 -fPIC src/plugins/io_pit/io_pit.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+pit.plugin:
+	cc -shared -m32 -fPIC src/plugins/pit/pit.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-io_am030614.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_am030614/*.c -o $(PLUGIN_BUILD_ROOT)/$@
+io_mk5io.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_mk5io/*.c -o $(PLUGIN_BUILD_ROOT)/$@
 
-io_at93c86.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_at93c86/*.c -o $(PLUGIN_BUILD_ROOT)/$@
+eeprom.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/eeprom/*.c -o $(PLUGIN_BUILD_ROOT)/$@
 	
-io_cat702.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_cat702/*.c -o $(PLUGIN_BUILD_ROOT)/$@
+lockchip.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/lockchip/*.c -o $(PLUGIN_BUILD_ROOT)/$@
 
-io_piuinput.plugin:
-	cc -shared -m32 -fPIC src/plugins/io_piuinput/io_piuinput.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+io_mk6io.plugin:
+	cc -shared -m32 -fPIC src/plugins/io_mk6io/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-io_x11_ckdur.plugin:
-	cc -shared -m32 -fPIC src/plugins/io_x11_ckdur/io_x11_ckdur.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+x11_keyboard_input.plugin:
+	cc -shared -m32 -fPIC src/plugins/x11_keyboard_input/*.c $(PLUGIN_INCLUDES) -lX11 -o $(PLUGIN_BUILD_ROOT)/$@
+
 
 microdog_34.plugin:
 	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog_34/microdog/*.c -I src/plugins/microdog_34/microdog src/plugins/microdog_34/microdog_34.c -o $(PLUGIN_BUILD_ROOT)/$@

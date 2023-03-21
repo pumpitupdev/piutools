@@ -81,7 +81,7 @@ static int HexToBin(const char* s, unsigned char* buff, int length) {
 }
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if (strcmp(section, "IO_CAT702") == 0) {
+    if (strcmp(section, "LOCKCHIP") == 0) {
         if (value == NULL) {
             return 0;
         }

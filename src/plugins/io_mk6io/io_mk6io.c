@@ -1,73 +1,21 @@
-/*
-    PIU input device emulator for Linux event devices
-    Based on [REDACTED] by infamouspat
-
-    Shoutouts to bxrx I guess :)
-*/
-
-/*
-	UPDATE : MAY-JUNE 2011 - Exceed2-NX are now supported (ATR4X). Dance Mats are also supported.
-*/
-
-#define LEGACY // Uncomment if you're building for Exceed2-NX
-// #define DEBUG //Uncomment if you want to see the scan codes in the console. Useful for mapping new Gamepads.
-
-//#define DANCEMAT
-#define KEYS
-
-//TODO: Dynamically determine these node names and add USB Keyboard node in here somewhere.
-#ifdef DANCEMAT
-#define INPUT "/dev/input/by-path/pci-0000:00:13.1-usb-0:2:1.0-event-joystick" //FOR USB DANCE MAT SUPPORT
-#else
-#define INPUT "/run/kbdhook" //FOR PS/2 KEYBOARD SUPPORT
+// Compatibility Framework for Andamiro MK6 IO
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
 #endif
-
-#include <linux/input.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <limits.h>
+
 
 #include <plugin_sdk/ini.h>
 #include <plugin_sdk/dbg.h>
 #include <plugin_sdk/plugin.h>
 
+#include "apug0pcb007.h"
 
+// TODO: Deprecate this with actual virtual USB Device Handling Like a Fucking Adult
 #define USB_ENDPOINT_IN	0x80
-
-enum piu_control
-{
-    CTL_P17 = 0x00000001,
-    CTL_P19 = 0x00000002,
-    CTL_P15 = 0x00000004,
-    CTL_P11 = 0x00000008,
-    CTL_P13 = 0x00000010,
-    CTL_TEST = 0x04000,
-    CTL_SERVICE = 0x200,
-	CTL_CLEAR = 0x8000,
-	CTL_COIN1 = 0x00000400,
-	CTL_COIN2 = 0x04000000,
-    CTL_P21 = 0x00080000,
-    CTL_P23 = 0x00100000,
-    CTL_P25 = 0x00040000,
-    CTL_P27 = 0x00010000,
-    CTL_P29 = 0x00020000
-};
-
-struct input_binding
-{
-    uint16_t code;
-    enum piu_control control;
-
-};
 
 struct usb_bus 
 {
@@ -76,7 +24,7 @@ struct usb_bus
     char dirname[PATH_MAX + 1];
 
     struct usb_device *devices;
-    u_int32_t location;
+    uint32_t location;
 
     struct usb_device *root_dev;
 };
@@ -157,39 +105,6 @@ struct usb_interface_descriptor {
 	unsigned char *extra;
 	int extralen;
 };
-
-/* Adding configurability to this hack is left as an exercise for the reader. 
-   (according to gergc that's practically my catchphrase or something) 
-
-   Pump has built-in keyboard support for TEST and SERVICE so I'm just going
-   to wire up the gameplay inputs here */
-
-static const struct input_binding bindings[] =
-{
-    { KEY_Q,    CTL_P17 },
-    { KEY_E,    CTL_P19 },
-    { KEY_S,    CTL_P15 },
-    { KEY_Z,    CTL_P11 },
-    { KEY_C,    CTL_P13 },
-    { KEY_R,    CTL_P27 },
-    { KEY_Y,    CTL_P29 },
-    { KEY_G,    CTL_P25 },
-    { KEY_V,    CTL_P21 },
-    { KEY_N,    CTL_P23 },
-    { KEY_F1,  CTL_SERVICE },
-    { KEY_F2,  CTL_TEST },
-    { KEY_F3,  CTL_CLEAR },
-    { KEY_F5,  CTL_COIN1 },
-    { KEY_F6,  CTL_COIN2 },
-    { 0, 0 }
-};
-
-static const char device_path[] 
-    = INPUT;
-static int fd = -1;
-static uint32_t pad;
-static pthread_t hthread;
-
 static struct usb_bus bus;
 static struct usb_device dev;
 static struct usb_config_descriptor config;
@@ -198,84 +113,24 @@ static struct usb_interface_descriptor idesc;
 
 struct usb_bus *usb_busses;
 
-static void *input_thread(void *arg)
-{
-    struct input_event ev;
-    int i;
-
-    /* Not going to use any kind of locking because I'm a lazy arse */
-
-    while (true) {
-        if (read(fd, &ev, sizeof(ev)) != sizeof(ev)) {
-            if (errno == EBADF) {
-                /* Main thread closed our handle, we need to exit */
-                return NULL;
-            } else {
-                /* Something else went wrong */
-                perror("Input read");
-                exit(EXIT_FAILURE);
-            }
-        }
-#ifdef DEBUG
-fprintf(stderr,"SCANCODE IS: %d\n",ev.code);
-#endif
-
-
-        if (ev.type == EV_KEY) {
-
-            for (i = 0 ; bindings[i].code != 0 ; i++) {
-                if (ev.code == bindings[i].code) {
-
-                    if (ev.value) {
-
-                        pad |= bindings[i].control;
-                    } else {
-
-                        pad &= ~bindings[i].control;
-                    }
-
-                    break;
-                }
-            }
-        }
-    }
-}
-
 int piuinput_usb_claim_interface(void *hdev, int interface) {return 0;}
+int piuinput_usb_close(void *hdev){return 0;}
 
-int piuinput_usb_close(void *hdev)
-{
-    /* My aesthetic sensibilities demand at least this much of me. */
-    if (hthread != 0) {
-        close(fd);
-
-        pthread_join(hthread, NULL);
-        hthread = 0;
-        fd = -1;
-    }
-    
-    return 0;
-}
-
-int piuinput_usb_control_msg(void *hdev, int requesttype, int request, int value, 
-    int index, uint8_t *bytes, int nbytes, int timeout) 
-{
+int piuinput_usb_control_msg(void *hdev, int requesttype, int request, int value, int index, uint8_t *bytes, int nbytes, int timeout) {
     if (requesttype & USB_ENDPOINT_IN) {
-        memset(bytes, 0xFF, nbytes);
-        *((uint32_t *) bytes) = ~pad;
+        memset(bytes, 0xFF, nbytes);        
+        *((uint32_t *) bytes) = mk6io_read_input();
+        
     }
-
     return nbytes;
 }
-
 int piuinput_usb_find_busses(void){
     memset(&bus, 0, sizeof(bus));
     usb_busses = &bus;
     return 1;
 }
 
-int piuinput_usb_find_devices(void)
-{
+int piuinput_usb_find_devices(void){
     /* PIU accesses device->config->bConfigurationValue and
        device->config->interface->altsetting->bInterfaceNumber 
 
@@ -296,26 +151,7 @@ int piuinput_usb_find_devices(void)
 }
 
 int piuinput_usb_init(void){return 0;}
-
-void *piuinput_usb_open(struct usb_device *hdev)
-{
-	system("ln -s /dev/input/by-path/*event-kbd /run/kbdhook");
-    if (hthread != 0){
-		return NULL;
-	} 
-
-    fd = open(device_path, O_RDONLY);
-    if (fd == -1) {
-        perror("Opening input");
-        //exit(EXIT_FAILURE);
-    }
-
-    pthread_create(&hthread, NULL, input_thread, NULL);
-
-    /* Taking some liberties here but hey as long as it's non-NULL */
-    return hdev;
-}
-
+void* piuinput_usb_open(struct usb_device *hdev){return hdev;}
 int piuinput_usb_reset(void *hdev){return 0;}
 int piuinput_usb_set_altinterface(void *hdev, int interface){return 0;}
 int piuinput_usb_set_configuration(void *hdev, int configuration) {return 0;}
@@ -338,4 +174,3 @@ static HookEntry entries[] = {
 const PHookEntry plugin_init(const char* config_path){    
     return entries;
 }
-

@@ -5,7 +5,7 @@
 
 #include "ini.h"
 #include "PIUTools_Input.h"
-#include "x11_keyio.h"
+
 
 char piutools_game_rom_path[1024] = {0x00};
 char piutools_game_version_path[1024] = {0x00};
@@ -81,5 +81,4 @@ void piutools_init_sdk(void){
     }
     // Set up Initial PIUTools Config
     PIUTools_Input_Reset();
-    X11_KeyIO_Init(piutools_game_config_path);
 }

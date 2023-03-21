@@ -106,15 +106,14 @@ static int loader_initialized = 0;
 void __attribute__((constructor)) PPL_Init() {
     if(loader_initialized){return;}
     loader_initialized = 1;
-    printf("HI 1\n");
+
     // Set up PIUTOOLS Root
     piutools_init_sdk();
-    printf("HI 2\n");
+
     // Set Hook Library Path
     char hook_library_path[1024] = {0x00};
-    printf("%s %s\n",piutools_root_path,hook_library_name);
     sprintf(hook_library_path,"%s/%s",piutools_root_path,hook_library_name);
-    printf("HI 3\n");
+
     // First - Get Hook Entrypoint
     if(!get_function_address(hook_library_path,"flh_inline_hook_byname",(void**)&hook_function_byname)){
         printf("Error Resolving flh_inline_hook_byname From Library!\n");

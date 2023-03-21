@@ -71,7 +71,7 @@ void hex_string_to_8_byte_array(const char *hex_string, unsigned char *byte_arra
 }
 
 static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if (strcmp(section, "IO_AT93C86") == 0) {
+    if (strcmp(section, "EEPROM") == 0) {
         if (value == NULL) {
             return 0;
         }
