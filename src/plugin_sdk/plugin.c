@@ -5,7 +5,8 @@
 
 #include "ini.h"
 #include "PIUTools_Input.h"
-
+#include "PIUTools_USB.h"
+#include "PIUTools_Filesystem.h"
 
 char piutools_game_rom_path[1024] = {0x00};
 char piutools_game_version_path[1024] = {0x00};
@@ -80,5 +81,7 @@ void piutools_init_sdk(void){
         exit(-1);
     }
     // Set up Initial PIUTools Config
+    PIUTools_Filesystem_Init();
     PIUTools_Input_Reset();
+    PIUTools_USB_Init(piutools_game_save_path);
 }

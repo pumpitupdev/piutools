@@ -44,6 +44,8 @@ io_mk6io.plugin:
 x11_keyboard_input.plugin:
 	cc -shared -m32 -fPIC src/plugins/x11_keyboard_input/*.c $(PLUGIN_INCLUDES) -lX11 -o $(PLUGIN_BUILD_ROOT)/$@
 
+fake_libusb.plugin:
+	cc -shared -m32 -fPIC src/plugins/fake_libusb/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 microdog_34.plugin:
 	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog_34/microdog/*.c -I src/plugins/microdog_34/microdog src/plugins/microdog_34/microdog_34.c -o $(PLUGIN_BUILD_ROOT)/$@
@@ -54,6 +56,9 @@ s3d_opengl.plugin:
 usbfs_null.plugin:
 	cc -shared -m32 -fPIC src/plugins/usbfs_null/usbfs_null.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
+ticket_dispenser.plugin:
+	cc -shared -m32 -fPIC src/plugins/ticket_dispenser/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
 # --- WORK IN PROGRESS ---
 usbfs_emulator.plugin:
 	cc -shared -m32 -fPIC src/plugins/usbfs_emulator/usbfs_emulator.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
@@ -62,6 +67,5 @@ usbfs_emulator.plugin:
 filesystem_redirect.plugin:
 	cc -shared -m32 -fPIC src/plugins/filesystem_redirect/filesystem_redirect.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-TICKET_DISPENSER_COMPONENTS := src/plugins/ticket/ticket.c -I src/plugins/ticket
-ticket_dispenser.plugin:
-	cc -shared -m32 -fPIC $(TICKET_DISPENSER_COMPONENTS) src/plugins/ticket_dispenser.c $(PPL_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+

@@ -31,7 +31,7 @@ unsigned short PIUIO_HandleInput_1(){
     if(PIUTools_IO_IN[PINPUT_P1_PAD_DL]){value |= FP_LEFTDOWN;}
     if(PIUTools_IO_IN[PINPUT_P1_PAD_DR]){value |= FP_RIGHTDOWN;}
     if(PIUTools_IO_IN[PINPUT_TEST_SWITCH]){value |= BTN_TEST;}
-    if(!PIUTools_IO_IN[PINPUT_COIN_1]){value |= BTN_COIN;}
+    if(PIUTools_IO_IN[PINPUT_COIN_1]){value |= BTN_COIN;}
     if(PIUTools_IO_IN[PINPUT_SERVICE_SWITCH]){value |= BTN_SERVICE;}
     if(PIUTools_IO_IN[PINPUT_CLEAR_SWITCH]){value |= BTN_CLEAR;}
     return ~value;

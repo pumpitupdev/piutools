@@ -34,7 +34,7 @@ static void pit_patch(int signum, siginfo_t *info, void* ctx){
     context->uc_mcontext.gregs[REG_EIP]++;
     return;    
   }
-
+  //printf("EIP: %04X\n",context->uc_mcontext.gregs[REG_EIP]);
   struct sigaction* next_action = (signum == SIGILL) ? &old_action_sigill : &old_action_sigsegv;
 
   if (next_action->sa_handler != NULL && next_action->sa_handler != SIG_IGN) {

@@ -1,79 +1,82 @@
 // Plugin for Ticket Dispenser Support
-// Plugin for RainbowChina/SafeNET MicroDOG API Version 3.4
 #include <string.h>
 #include <stdio.h>
-#include <stdarg.h>
+#include <stdlib.h>
 #include <plugin_sdk/ini.h>
 #include <plugin_sdk/dbg.h>
 #include <plugin_sdk/plugin.h>
+#include <plugin_sdk/PIUTools_USB.h>
 
 
-#include <ticket.h>
+#include "ticket.h"
 
-typedef int (*ioctl_func_t)(int, unsigned long, ...);
+#define FAKE_TICKET_FD 0x99884
+char fake_ticket_device_path[1024] = {0x00};
+
+typedef int (*ioctl_func_t)(int fd, int request, void* data);
+static ioctl_func_t next_ioctl;
+
 typedef int (*open_func_t)(const char *, int);
-ioctl_func_t next_ioctl;
 open_func_t next_open;
 
 static int dispenser_enabled;
+static int starting_tickets = 100;
 
-
-static int x_ioctl(int fd, unsigned long request, ...) {
-    va_list args;
-    va_start(args, request);
-    void *arg = va_arg(args, void *);
-    va_end(args);
+static int ticket_ioctl(int fd, int request, void* data) {   
     if(fd == FAKE_TICKET_FD){
-        parse_ticketcmd((unsigned char*)arg);
+        parse_ticketcmd((unsigned char*)data);
         return 0;
     }
-    return next_ioctl(fd, request, arg);
+    return next_ioctl(fd, request, data);
 }
 
-int x_open(const char *pathname, int flags) {
-    printf("Ticket Dispenser Open\n");
+static int ticket_libusb(void *dev, int requesttype, int request, int value, int index, char *bytes, int size, int timeout){
+    struct ticket_usbdevfs_ctrltransfer ctrl;
+    ctrl.bRequestType = requesttype;
+    ctrl.data = bytes;
+    ctrl.timeout = timeout;
+    ctrl.wIndex = index;
+    ctrl.wLength = size;
+    ctrl.bRequest = request;
+
+    parse_ticketcmd(&ctrl);
+    return 0;
+}
+
+int ticket_open(const char *pathname, int flags) {
     // Ticket Endpoint Handling
-    if(strstr(pathname,OLD_TICKET_ENDPOINT)){
-        // Do nothing for now.
+    if(strcmp(pathname,fake_ticket_device_path) == 0){
         return FAKE_TICKET_FD;
     }
     return next_open(pathname, flags);
 }
 
-// fopen /proc/bus/usb/devices
 
-static int read_config_file(const char *filename){
-    config_t cfg;
-    config_setting_t *setting;
-    int success = 1;
+static int parse_config(void* user, const char* section, const char* name, const char* value){
+    if(strcmp(section,"TICKET_DISPENSER") == 0){ 
+        if(value == NULL){return 0;}       
 
-    config_init(&cfg);
-
-    if (!config_read_file(&cfg, filename)) {
-        DBG_printf("[%s] Error: %s:%d - %s", __FILE__, config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-        success = 0;
-        goto cleanup;
+        if(strcmp(name,"starting_tickets") == 0){
+            char *ptr;            
+            starting_tickets = strtoul(value,&ptr,10);
+        }
     }
-
-    setting = config_lookup(&cfg, "ticket_dispenser.enabled");
-    if (setting != NULL && config_setting_type(setting) == CONFIG_TYPE_INT) {
-        dispenser_enabled = config_setting_get_int(setting);
-    }
-cleanup:
-    config_destroy(&cfg);
-    return success;
+    return 1;
 }
 
-static HCCHookInfoEntry entries[] = {
-    {"libc.so.6","ioctl",(void*)x_ioctl,(void*)&next_ioctl,1},
-    {"libc.so.6","open",(void*)x_open,(void*)&next_open,1}
+
+static HookEntry entries[] = {
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","ioctl", ticket_ioctl, &next_ioctl, 1),    
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","open", ticket_open, &next_open, 1),
+    {}    
 };
 
-int plugin_init(const char* config_path, PHCCHookInfoEntry *hook_entry_table){
-    read_config_file(config_path); 
-    if(!dispenser_enabled){return 0;} 
-    *hook_entry_table = entries;
-    return sizeof(entries) / sizeof(HCCHookInfoEntry);
+const PHookEntry plugin_init(const char* config_path){
+  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+  init_ticket_state(starting_tickets);
+  // Make Fake USB Device for Tickets
+  PUSBDevice nd = PIUTools_USB_Add_Device(USB_2_SPEED,0,0x0d2f,0x1004,"TKT123",(void*)ticket_libusb,NULL,NULL);
+  sprintf(fake_ticket_device_path,"/proc/bus/usb/%03d/%03d",nd->bus,nd->dev);
+  printf("[%s] Created Fake Ticket Device At: %s\n",__FILE__,fake_ticket_device_path);
+  return entries;
 }
-
-

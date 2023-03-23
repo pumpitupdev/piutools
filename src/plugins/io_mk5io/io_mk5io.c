@@ -48,7 +48,7 @@ void am030614_handler(int signum, siginfo_t *info, void* ctx){
         default:
             break;
     }
- 
+    
     struct sigaction* next_action = (signum == SIGILL) ? &old_action_sigill : &old_action_sigsegv;
 
     if (next_action->sa_handler != NULL && next_action->sa_handler != SIG_IGN) {
