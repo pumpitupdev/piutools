@@ -72,6 +72,7 @@ void load_plugin(const char* plugin_name){
                 }
                 if(rfa == NULL){
                     printf("[%s] \033[1;31mHook Fail:\033[0m %s %s [%s:%s] = %p\n", __FUNCTION__, hook_type_str, tb, cur_entry->source_library_name, cur_entry->target_function_name, cur_entry->hook_function_addr);
+                    cur_entry++;
                     continue;
                 }
 

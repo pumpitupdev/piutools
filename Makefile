@@ -23,6 +23,9 @@ ata_hdd.plugin:
 deadlock.plugin:
 	cc -shared -m32 -fPIC src/plugins/deadlock/deadlock.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
+exec_blocker.plugin:
+	cc -shared -m32 -fPIC src/plugins/exec_blocker/exec_blocker.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
 locale.plugin:
 	cc -shared -m32 -fPIC src/plugins/locale/locale.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
@@ -47,8 +50,8 @@ x11_keyboard_input.plugin:
 fake_libusb.plugin:
 	cc -shared -m32 -fPIC src/plugins/fake_libusb/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-microdog_34.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog_34/microdog/*.c -I src/plugins/microdog_34/microdog src/plugins/microdog_34/microdog_34.c -o $(PLUGIN_BUILD_ROOT)/$@
+microdog.plugin:
+	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog/microdog/*.c -I src/plugins/microdog/microdog src/plugins/microdog/microdog.c -o $(PLUGIN_BUILD_ROOT)/$@
 
 s3d_opengl.plugin:
 	cc -shared -m32 -fPIC src/plugins/s3d_opengl/s3d_opengl.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
@@ -58,6 +61,9 @@ usbfs_null.plugin:
 
 ticket_dispenser.plugin:
 	cc -shared -m32 -fPIC src/plugins/ticket_dispenser/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+usb_profile.plugin:
+	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 # --- WORK IN PROGRESS ---
 usbfs_emulator.plugin:

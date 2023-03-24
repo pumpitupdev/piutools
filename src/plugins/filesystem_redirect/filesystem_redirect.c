@@ -27,9 +27,20 @@ FILE * redirect_fs_fopen(const char * filename, const char * mode){
     return next_fopen(PIUTools_Filesystem_Resolve_Path(filename,n_path), mode);
 }
 
+
+typedef int(*fxstat_t)(int ver, int fildes, struct stat *stat_buf);
+fxstat_t next_fxstat;
+int redirect_fxstat(int ver, int fildes, struct stat *stat_buf){
+    int res = next_fxstat(ver,fildes,stat_buf);
+    if(res == -1){res = 0;}
+    return res;
+}
+
+
 static HookEntry entries[] = {
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","open", redirect_fs_open, &next_open, 1),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","fopen", redirect_fs_fopen, &next_fopen, 1),
+    //HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","__fxstat", redirect_fxstat, &next_fxstat, 1),    
     {}
 };
 

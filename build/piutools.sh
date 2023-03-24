@@ -93,7 +93,7 @@ export PIUTOOLS_SAVE_PATH=$(realpath "./save")
 # Create save path if it isn't created yet
 game_save_root=$PIUTOOLS_SAVE_PATH/$PIUTOOLS_GAME_NAME/$PIUTOOLS_GAME_VERSION
 if [ ! -e "$game_save_root" ]; then
-  exec mkdir -p -f $game_save_root
+  exec mkdir -p $game_save_root
   exec chmod -r 777 $game_save_root
 fi
 
@@ -113,4 +113,5 @@ exe_path=$rom_game_root/version/$game_version/piu
 
 # GOGOGO
 #exec ltrace -e '*' -o /mnt/c/repos/piutools_ltrace.txt $exe_path game
+#exec strace -o /mnt/c/repos/piutools_strace.txt $exe_path game
 exec $exe_path game
