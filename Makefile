@@ -12,7 +12,7 @@ loader:
 	cc -shared -m32 -fPIC src/piutools_loader.c $(PLUGIN_INCLUDES) -ldl -o $(BUILD_ROOT)/piutools.so
 
 # --- Plugins ---
-plugins: asound.plugin  ata_hdd.plugin microdog_34.plugin s3d_opengl.plugin deadlock.plugin  filesystem_redirect.plugin ticket_dispenser.plugin usbfs_null.plugin io_x11_ckdur.plugin
+plugins: asound.plugin  ata_hdd.plugin microdog_34.plugin s3d_opengl.plugin deadlock.plugin ds1963s_in_ds2480b.plugin filesystem_redirect.plugin ticket_dispenser.plugin usbfs_null.plugin io_x11_ckdur.plugin
 
 asound.plugin:
 	cc -shared -m32 -fPIC src/plugins/asound/asound.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
@@ -22,6 +22,20 @@ ata_hdd.plugin:
 
 deadlock.plugin:
 	cc -shared -m32 -fPIC src/plugins/deadlock/deadlock.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+DS1963S_UTILS_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/1-wire-bus.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/coroutine.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/ds1963s-common.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/ds1963s-device.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/ds2480b-device.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/sha1.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-factory.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-pty.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport.c
+
+ds1963s_in_ds2480b.plugin:
+	git submodule update --init --recursive # TODO: un-cheese
+	cc -shared -m32 -fPIC src/plugins/ds1963s_in_ds2480b/ds1963s_in_ds2480b.c $(DS1963S_UTILS_SOURCES) $(PLUGIN_INCLUDES) -lpthread -I src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src -o $(PLUGIN_BUILD_ROOT)/$@
 
 exec_blocker.plugin:
 	cc -shared -m32 -fPIC src/plugins/exec_blocker/exec_blocker.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
