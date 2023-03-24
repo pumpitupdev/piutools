@@ -58,7 +58,8 @@ int x11ki_XNextEvent(Display *display, XEvent *event){
                     break;
                 case XK_6:
                     PIUTools_IO_IN[PINPUT_COIN_2] = (event->type == KeyPress) ? 1 : 0;
-                    break;                                      
+                    break;        
+                // USB IN Will Be a Toggle                              
                 case XK_7:
                     PIUTools_IO_IN[PINPUT_P1_USB_IN] = (event->type == KeyPress) ? 1 : 0;
                     break;                                      

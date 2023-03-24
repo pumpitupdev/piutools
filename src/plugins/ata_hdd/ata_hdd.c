@@ -6,6 +6,7 @@
 #include <plugin_sdk/ini.h>
 #include <plugin_sdk/dbg.h>
 #include <plugin_sdk/plugin.h>
+#include <plugin_sdk/PIUTools_Filesystem.h>
 
 #ifndef HDIO_GET_IDENTITY
 #define HDIO_GET_IDENTITY 0x030D
@@ -73,6 +74,8 @@ static int parse_config(void* user, const char* section, const char* name, const
         } else if (strcmp(name, "atainfo_serial") == 0) {
             update_ata_info_block(value, 0x36, 0x24);
             DBG_printf("[%s:%s] Loaded HDD Serial: %s", __FILE__, __FUNCTION__, value);
+        }else if(strcmp(name,"mountpoint_hd") == 0){
+            PIUTools_Filesystem_AddMountEntry(value,"/mnt/hd");
         }
     }
     return 1;

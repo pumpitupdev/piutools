@@ -50,6 +50,7 @@ x11_keyboard_input.plugin:
 fake_libusb.plugin:
 	cc -shared -m32 -fPIC src/plugins/fake_libusb/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
+
 microdog.plugin:
 	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog/microdog/*.c -I src/plugins/microdog/microdog src/plugins/microdog/microdog.c -o $(PLUGIN_BUILD_ROOT)/$@
 
@@ -63,7 +64,7 @@ ticket_dispenser.plugin:
 	cc -shared -m32 -fPIC src/plugins/ticket_dispenser/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 usb_profile.plugin:
-	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c src/plugins/usb_profile/nx2/*.c -lpthread $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 # --- WORK IN PROGRESS ---
 usbfs_emulator.plugin:

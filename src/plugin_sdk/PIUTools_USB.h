@@ -43,4 +43,5 @@ typedef int (*transaction_handler)(void *dev, int requesttype, int request, int 
 extern USBDevice PIUTools_USB_Devices[MAX_USB_DEVICES];
 void PIUTools_USB_Init(const char* root_path);
 PUSBDevice PIUTools_USB_Add_Device(unsigned char usb_speed, unsigned char cls, unsigned short vid, unsigned short pid, char* serial, void* ctrl_msg_handler,void* bulk_read_handler,void* bulk_write_handler);
-void PIUTools_USB_Remove_Device(unsigned char dev);
+void PIUTools_USB_Connect_Device(unsigned char dev);
+void PIUTools_USB_Disconnect_Device(unsigned char dev);

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "dbg.h"
 #include "plugin.h"
@@ -11,14 +13,60 @@
 unsigned int num_subst_paths = 0;
 PathSubst PIUTools_Filesystem_Sub[MAX_FILESYSTEM_SUB];
 
+
+#define MAX_MOUNT_ENTRIES 8
+
+static MountsEntry mount_entries[MAX_MOUNT_ENTRIES];
+static char fake_mount_path[1024] = {0x00};
+
+void UpdateMountFile(void){
+    char line[512]={0x00};
+    FILE* fp = fopen(fake_mount_path,"wb");
+    if(!fp){return;}
+    for(int i=0;i<MAX_MOUNT_ENTRIES;i++){
+        if(mount_entries[i].enabled){
+            sprintf(line,"%s %s\n",mount_entries[i].from,mount_entries[i].to);
+            fwrite(line,strlen(line),1,fp);
+        }
+    }
+    fclose(fp);
+}
+
+
+void PIUTools_Filesystem_RemoveEntry(PPathSubst entry){
+    entry->enabled = 0;
+    num_subst_paths--;
+}
+
+void PIUTools_Filesystem_RemoveMountEntry(PMountsEntry entry){
+    entry->enabled = 0;
+    UpdateMountFile();
+}
+
+PMountsEntry PIUTools_Filesystem_AddMountEntry(const char* mount_from, const char* mount_to){
+    for(int i=0; i < MAX_MOUNT_ENTRIES; i++){
+        if(mount_entries[i].enabled == 0){
+            strncpy(mount_entries[i].from,mount_from,sizeof(mount_entries[i].from));
+            strncpy(mount_entries[i].to,mount_to,sizeof(mount_entries[i].to));
+            mount_entries[i].enabled = 1;
+            UpdateMountFile();
+            return &mount_entries[i];
+        }
+    }
+    return NULL;
+}
+
 void PIUTools_Filesystem_Init(void){
     for(int i=0;i<MAX_FILESYSTEM_SUB;i++){
         memset(&PIUTools_Filesystem_Sub[i],0,sizeof(PathSubst));
     }
+    // Addition for Mounts
+    sprintf(fake_mount_path,"%s/mounts",piutools_game_save_path);
+    PIUTools_Filesystem_Add("/proc/mounts",fake_mount_path);    
 }
 
 
-void PIUTools_Filesystem_Add(const char* path_from, const char* path_to){
+PPathSubst PIUTools_Filesystem_Add(const char* path_from, const char* path_to){
         PIUTools_Filesystem_Sub[num_subst_paths].sub_type = SUB_TYPE_START;
 
         if(strncmp(path_from,SEARCH_ANY_TAG,strlen(SEARCH_ANY_TAG)) == 0){
@@ -42,6 +90,21 @@ void PIUTools_Filesystem_Add(const char* path_from, const char* path_to){
         strcpy(PIUTools_Filesystem_Sub[num_subst_paths].replacement_path,path_to);
         DBG_printf("[%s] %s => %s",__FILE__,PIUTools_Filesystem_Sub[num_subst_paths].src_path,PIUTools_Filesystem_Sub[num_subst_paths].replacement_path);
         num_subst_paths++;
+        return &PIUTools_Filesystem_Sub[num_subst_paths-1];        
+}
+
+int PIUTools_Filesystem_Path_Exist(const char* path){
+     struct stat st;
+     return stat(path, &st) != -1;
+}
+
+
+int PIUTools_Filesystem_Create_Directory(const char* path){
+    struct stat st;
+    if (!PIUTools_Filesystem_Path_Exist(path)) {
+        return mkdir(path, 0755);
+    }
+    return 0;
 }
 
 
@@ -91,3 +154,5 @@ char* PIUTools_Filesystem_Resolve_Path(const char* orig_path, char* sub_path){
     #endif    
     return (char*)orig_path;
 }
+
+

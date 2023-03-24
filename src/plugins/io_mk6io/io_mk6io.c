@@ -36,6 +36,7 @@ int piuinput_usb_control_msg(void *hdev, int requesttype, int request, int value
 
 const PHookEntry plugin_init(const char* config_path){   
     PUSBDevice nd = PIUTools_USB_Add_Device(USB_1_FULL_SPEED,0,PIUIO_VID,PIUIO_PID,"MK6IO",(void*)piuinput_usb_control_msg,NULL,NULL);
+    PIUTools_USB_Connect_Device(nd->dev);
     sprintf(fake_mk6io_device_path,"/proc/bus/usb/%03d/%03d",nd->bus,nd->dev);
     printf("[%s] Created Fake MK6IO Device At: %s\n",__FILE__,fake_mk6io_device_path);
     return NULL;

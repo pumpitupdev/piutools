@@ -2,9 +2,24 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "adler32.h"
 
 #include "nx2_rank.h"
+
+#define BASE 65521
+
+static uint32_t util_adler32_calc(uint32_t initval, const uint8_t *input, size_t length)
+{
+  unsigned int s1 = initval & 0xffff;
+  unsigned int s2 = (initval >> 16) & 0xffff;
+  unsigned int n;
+
+  for (n = 0; n < length; n++) {
+    s1 = (s1 + input[n]) % BASE;
+    s2 = (s2 + s1) % BASE;
+  }
+
+  return (s2 << 16) + s1;
+}
 
 static char *util_str_merge(const char *str1, const char *str2)
 {

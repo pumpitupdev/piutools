@@ -15,7 +15,7 @@
 char fake_devices_list_path[1024] = {0x00};
 
 
-
+int current_device_count = 0;
 USBDevice PIUTools_USB_Devices[MAX_USB_DEVICES];
 
 void UpdateFakeDevices(void){
@@ -29,15 +29,17 @@ void UpdateFakeDevices(void){
         char p_line[256];
         char s_line[256];
         if(PIUTools_USB_Devices[i].enabled == 0){continue;}
-        sprintf(t_line, "T:  Bus=%02d Lev=00 Prnt=00 Port=00 Cnt=00 Dev#= %d Spd=%s  MxCh= 6\n", PIUTools_USB_Devices[i].bus, PIUTools_USB_Devices[i].dev, PIUTools_USB_Devices[i].spd);
+        sprintf(t_line, "T:  Bus=%02d Lev=04 Prnt=01 Port=%02d Cnt=03 Dev=%3d Spd=%s  MxCh= 6\n", PIUTools_USB_Devices[i].bus, PIUTools_USB_Devices[i].port,PIUTools_USB_Devices[i].dev, PIUTools_USB_Devices[i].spd);
         fwrite(t_line,strlen(t_line),1,fp);
-        sprintf(p_line, "P:  Vendor=%04x ProdID=%04x Rev=%s\n", PIUTools_USB_Devices[i].vid, PIUTools_USB_Devices[i].pid, PIUTools_USB_Devices[i].rev);
+        sprintf(p_line, "P:  Vendor=%4x ProdID=%4x Rev=%s\n", PIUTools_USB_Devices[i].vid, PIUTools_USB_Devices[i].pid, PIUTools_USB_Devices[i].rev);
         fwrite(p_line,strlen(p_line),1,fp);
         sprintf(s_line, "S:  SerialNumber=%s\n", PIUTools_USB_Devices[i].serial);
         fwrite(s_line,strlen(s_line),1,fp);
         if(PIUTools_USB_Devices[i].cls == USB_CLASS_MASS_STORAGE){
-            const char* usb_storage_line = "I:* If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage\n";
+            const char* usb_storage_line = "I:  If#= 0 Alt= 0 #EPs= 2 Cls=08 Driver=usb-storage\n";
             fwrite(usb_storage_line,strlen(usb_storage_line),1,fp);
+            const char* e_line = "E:  Ad=82(I)\n";
+            fwrite(e_line,strlen(e_line),1,fp);            
         }
         fwrite("\n",1,1,fp);
     }
@@ -48,21 +50,18 @@ void UpdateFakeDevices(void){
 
 PUSBDevice PIUTools_USB_Add_Device(unsigned char usb_speed, unsigned char cls, unsigned short vid, unsigned short pid, char* serial, void* ctrl_msg_handler,void* bulk_read_handler,void* bulk_write_handler){
     // Find the first free device
-    int offset = 0;
-    
-    while(offset < MAX_USB_DEVICES){
-        if(!PIUTools_USB_Devices[offset].enabled){break;}
-        offset++;
-    }
-    PIUTools_USB_Devices[offset].enabled = 1;
+    int offset = current_device_count;
+    current_device_count++;
+    PIUTools_USB_Devices[offset].enabled = 0;
     PIUTools_USB_Devices[offset].bus = FAKE_USB_BUS;
     PIUTools_USB_Devices[offset].lev = 0;
     PIUTools_USB_Devices[offset].prnt = 0;
-    PIUTools_USB_Devices[offset].port = 0;
+    PIUTools_USB_Devices[offset].port = offset+1;
     PIUTools_USB_Devices[offset].cnt = 0;
     PIUTools_USB_Devices[offset].dev = offset+1;
     PIUTools_USB_Devices[offset].mxch = 0;
     PIUTools_USB_Devices[offset].spd_enum = usb_speed;
+    PIUTools_USB_Devices[offset].cls = cls;
     const char* spd_s;
     switch(usb_speed){
         case USB_1_LOW_SPEED:
@@ -90,13 +89,16 @@ PUSBDevice PIUTools_USB_Add_Device(unsigned char usb_speed, unsigned char cls, u
     strcpy(PIUTools_USB_Devices[offset].serial,serial);
     PIUTools_USB_Devices[offset].ctrl_msg_handler = ctrl_msg_handler;
     PIUTools_USB_Devices[offset].bulk_read_handler = bulk_read_handler;
-    PIUTools_USB_Devices[offset].bulk_write_handler = bulk_write_handler;
-    // Update Our Fake Devices File
-    UpdateFakeDevices();
+    PIUTools_USB_Devices[offset].bulk_write_handler = bulk_write_handler;    
     return &PIUTools_USB_Devices[offset];
 }
 
-void PIUTools_USB_Remove_Device(unsigned char dev){
+void PIUTools_USB_Connect_Device(unsigned char dev){
+    PIUTools_USB_Devices[dev - 1].enabled = 1;
+    UpdateFakeDevices();
+}
+
+void PIUTools_USB_Disconnect_Device(unsigned char dev){
     PIUTools_USB_Devices[dev - 1].enabled = 0;
     UpdateFakeDevices();
 }

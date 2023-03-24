@@ -106,7 +106,7 @@ enum _PIUTOOLS_OUTPUT{
     POUTPUT_MAX 
 };
 
-extern unsigned char PIUTools_IO_OUT[sizeof(POUTPUT_MAX)];
-extern unsigned char PIUTools_IO_IN[sizeof(PINPUT_MAX)];
+extern unsigned char PIUTools_IO_OUT[POUTPUT_MAX];
+extern unsigned char PIUTools_IO_IN[PINPUT_MAX];
 
 void PIUTools_Input_Reset(void);

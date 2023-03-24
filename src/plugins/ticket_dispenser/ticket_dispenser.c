@@ -76,6 +76,7 @@ const PHookEntry plugin_init(const char* config_path){
   init_ticket_state(starting_tickets);
   // Make Fake USB Device for Tickets
   PUSBDevice nd = PIUTools_USB_Add_Device(USB_2_SPEED,0,0x0d2f,0x1004,"TKT123",(void*)ticket_libusb,NULL,NULL);
+  PIUTools_USB_Connect_Device(nd->dev);
   sprintf(fake_ticket_device_path,"/proc/bus/usb/%03d/%03d",nd->bus,nd->dev);
   printf("[%s] Created Fake Ticket Device At: %s\n",__FILE__,fake_ticket_device_path);
   return entries;
