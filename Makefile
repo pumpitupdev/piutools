@@ -12,7 +12,7 @@ loader:
 	cc -shared -m32 -fPIC src/piutools_loader.c $(PLUGIN_INCLUDES) -ldl -o $(BUILD_ROOT)/piutools.so
 
 # --- Plugins ---
-plugins: asound.plugin  ata_hdd.plugin microdog_34.plugin s3d_opengl.plugin deadlock.plugin ds1963s_in_ds2480b.plugin filesystem_redirect.plugin ticket_dispenser.plugin usbfs_null.plugin io_x11_ckdur.plugin
+plugins: asound.plugin  ata_hdd.plugin microdog.plugin s3d_opengl.plugin deadlock.plugin ds1963s_in_ds2480b.plugin filesystem_redirect.plugin ticket_dispenser.plugin usbfs_null.plugin x11_keyboard_input.plugin
 
 asound.plugin:
 	cc -shared -m32 -fPIC src/plugins/asound/asound.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
@@ -31,6 +31,7 @@ DS1963S_UTILS_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/1-wire
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/sha1.c \
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-factory.c \
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-pty.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-unix.c \
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport.c
 
 ds1963s_in_ds2480b.plugin:
@@ -65,7 +66,7 @@ fake_libusb.plugin:
 	cc -shared -m32 -fPIC src/plugins/fake_libusb/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 microdog.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog/microdog/*.c -I src/plugins/microdog/microdog src/plugins/microdog/microdog.c -o $(PLUGIN_BUILD_ROOT)/$@
+	cc -shared -m32 -fPIC $(PLUGIN_INCLUDES) src/plugins/microdog/microdog/*.c -I src/plugins/microdog/microdog src/plugins/microdog/microdog.c -o $(PLUGIN_BUILD_ROOT)/$@
 
 s3d_opengl.plugin:
 	cc -shared -m32 -fPIC src/plugins/s3d_opengl/s3d_opengl.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
