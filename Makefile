@@ -1,27 +1,55 @@
 BUILD_ROOT := build
 PLUGIN_BUILD_ROOT := $(BUILD_ROOT)/plugins
 
-PLUGIN_INCLUDES := src/plugin_sdk/*.c -I src
+PLUGIN_COMMON_SOURCES := src/plugin_sdk/*.c
+PLUGIN_INCLUDES := -I src -I src/plugin_sdk
+
+LOADER_CFLAGS ?= -shared -m32 -fPIC
+PLUGIN_CFLAGS ?= $(LOADER_CFLAGS)
 
 ifeq ($(findstring .plugin,$(MAKECMDGOALS)),.plugin)
   $(shell mkdir -p $(PLUGIN_BUILD_ROOT))
 endif
 
+PLUGIN_NAMES := asound \
+				ata_hdd \
+				deadlock \
+				ds1963s_in_ds2480b \
+				eeprom \
+				exec_blocker \
+				fake_libusb \
+				filesystem_redirect \
+				io_mk5io \
+				io_mk6io \
+				lockchip \
+				locale \
+				microdog \
+				pit \
+				s3d_opengl \
+				ticket_dispenser \
+				usbfs_null \
+				x11_keyboard_input
+
+PLUGIN_OBJS := $(patsubst %,$(PLUGIN_BUILD_ROOT)/%.plugin,$(PLUGIN_NAMES))
+
+all: loader plugins
+
 # --- Core Dependencies ---
-loader:
-	cc -shared -m32 -fPIC src/piutools_loader.c $(PLUGIN_INCLUDES) -ldl -o $(BUILD_ROOT)/piutools.so
+.PHONY: loader
+loader: $(BUILD_ROOT)/piutools.so
+
+$(BUILD_ROOT)/piutools.so: src/piutools_loader.c $(PLUGIN_COMMON_SOURCES)
+	cc $(LOADER_CFLAGS) $^ $(PLUGIN_INCLUDES) -ldl -o $@
+
+$(PLUGIN_BUILD_ROOT)/%.plugin: $(PLUGIN_COMMON_SOURCES) src/plugins/%/*.c
+	cc $(PLUGIN_CFLAGS) $(PLUGIN_COMMON_SOURCES) src/plugins/$(patsubst $(PLUGIN_BUILD_ROOT)/%.plugin,%,$@)/*.c $(PLUGIN_INCLUDES) -o $@
 
 # --- Plugins ---
-plugins: asound.plugin  ata_hdd.plugin microdog.plugin s3d_opengl.plugin deadlock.plugin ds1963s_in_ds2480b.plugin filesystem_redirect.plugin ticket_dispenser.plugin usbfs_null.plugin x11_keyboard_input.plugin
+.PHONY: plugins
+plugins: $(PLUGIN_OBJS)
 
-asound.plugin:
-	cc -shared -m32 -fPIC src/plugins/asound/asound.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
-ata_hdd.plugin:
-	cc -shared -m32 -fPIC src/plugins/ata_hdd/ata_hdd.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-deadlock.plugin:
-	cc -shared -m32 -fPIC src/plugins/deadlock/deadlock.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+# --- Plugins with special snowflake build reqs ---
 
 DS1963S_UTILS_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/1-wire-bus.c \
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/coroutine.c \
@@ -34,60 +62,15 @@ DS1963S_UTILS_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/1-wire
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-unix.c \
 						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport.c
 
-ds1963s_in_ds2480b.plugin:
+$(PLUGIN_BUILD_ROOT)/ds1963s_in_ds2480b.plugin: src/plugins/ds1963s_in_ds2480b/ds1963s_in_ds2480b.c $(DS1963S_UTILS_SOURCES)
 	git submodule update --init --recursive # TODO: un-cheese
-	cc -shared -m32 -fPIC src/plugins/ds1963s_in_ds2480b/ds1963s_in_ds2480b.c $(DS1963S_UTILS_SOURCES) $(PLUGIN_INCLUDES) -lpthread -I src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src -o $(PLUGIN_BUILD_ROOT)/$@
+	cc $(PLUGIN_CFLAGS) $^ $(PLUGIN_INCLUDES) -lpthread -I src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src -o $@
 
-exec_blocker.plugin:
-	cc -shared -m32 -fPIC src/plugins/exec_blocker/exec_blocker.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+$(PLUGIN_BUILD_ROOT)/x11_keyboard_input.plugin:
+	cc $(PLUGIN_CFLAGS) $(PLUGIN_COMMON_SOURCES) src/plugins/x11_keyboard_input/*.c $(PLUGIN_INCLUDES) -lX11 -o $@
 
-locale.plugin:
-	cc -shared -m32 -fPIC src/plugins/locale/locale.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+$(PLUGIN_BUILD_ROOT)/microdog.plugin: src/plugins/microdog/microdog.c
+	cc $(PLUGIN_CFLAGS) $(PLUGIN_COMMON_SOURCES) src/plugins/microdog/microdog/*.c $(PLUGIN_INCLUDES) -I src/plugins/microdog/microdog -o $@
 
-pit.plugin:
-	cc -shared -m32 -fPIC src/plugins/pit/pit.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-io_mk5io.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/io_mk5io/*.c -o $(PLUGIN_BUILD_ROOT)/$@
-
-eeprom.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/eeprom/*.c -o $(PLUGIN_BUILD_ROOT)/$@
-	
-lockchip.plugin:
-	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/lockchip/*.c -o $(PLUGIN_BUILD_ROOT)/$@
-
-io_mk6io.plugin:
-	cc -shared -m32 -fPIC src/plugins/io_mk6io/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-x11_keyboard_input.plugin:
-	cc -shared -m32 -fPIC src/plugins/x11_keyboard_input/*.c $(PLUGIN_INCLUDES) -lX11 -o $(PLUGIN_BUILD_ROOT)/$@
-
-fake_libusb.plugin:
-	cc -shared -m32 -fPIC src/plugins/fake_libusb/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-
-microdog.plugin:
-	cc -shared -m32 -fPIC $(PLUGIN_INCLUDES) src/plugins/microdog/microdog/*.c -I src/plugins/microdog/microdog src/plugins/microdog/microdog.c -o $(PLUGIN_BUILD_ROOT)/$@
-
-s3d_opengl.plugin:
-	cc -shared -m32 -fPIC src/plugins/s3d_opengl/s3d_opengl.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-usbfs_null.plugin:
-	cc -shared -m32 -fPIC src/plugins/usbfs_null/usbfs_null.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-ticket_dispenser.plugin:
-	cc -shared -m32 -fPIC src/plugins/ticket_dispenser/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-usb_profile.plugin:
-	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c src/plugins/usb_profile/nx2/*.c -lpthread $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-# --- WORK IN PROGRESS ---
-usbfs_emulator.plugin:
-	cc -shared -m32 -fPIC src/plugins/usbfs_emulator/usbfs_emulator.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-
-filesystem_redirect.plugin:
-	cc -shared -m32 -fPIC src/plugins/filesystem_redirect/filesystem_redirect.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
-
-
-
+clean:
+	rm -f $(PLUGIN_OBJS) $(BUILD_ROOT)/piutools.so
