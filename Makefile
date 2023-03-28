@@ -63,6 +63,9 @@ network.plugin:
 pit.plugin:
 	cc -shared -m32 -fPIC src/plugins/pit/pit.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
+reboot_blocker.plugin:
+	cc -shared -m32 -fPIC src/plugins/reboot_blocker/reboot_blocker.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
 s3d_opengl.plugin:
 	cc -shared -m32 -fPIC src/plugins/s3d_opengl/s3d_opengl.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
