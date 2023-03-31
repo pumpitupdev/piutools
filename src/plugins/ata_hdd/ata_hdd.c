@@ -13,7 +13,8 @@
 #endif
 
 static unsigned char ATA_INFO_BLOCK[512] = {0x00};
-
+static char HDD_GAME_LABEL[256] = {0x00};
+static char fake_hdd_file_path[1024] = {0x00};
 
 // Handle Our HDD Security Calls
 typedef int (*ioctl_func_t)(int, unsigned long, ...);
@@ -59,6 +60,38 @@ static void update_ata_info_block(const char* value, size_t offset, size_t size)
 
     memcpy((char*)ATA_INFO_BLOCK + offset, value, size);
 }
+
+void pad_hdd_file(FILE *file, size_t target_size) {
+    size_t current_size = ftell(file);
+    if (current_size < target_size) {
+        size_t padding_size = target_size - current_size;
+        char *buffer = (char *)calloc(padding_size, 1);
+        fwrite(buffer, 1, padding_size, file);
+        free(buffer);
+    }
+}
+
+void create_hdd_file(void){
+    int name_offset = 0x200;
+    int ata_offset = 0x300;
+    FILE* fp = fopen(fake_hdd_file_path,"wb");
+    
+    fseek(fp,name_offset,0);
+    fwrite(HDD_GAME_LABEL,sizeof(HDD_GAME_LABEL),1,fp);
+    // Write ATA INFO
+    fwrite(ATA_INFO_BLOCK+0x14,20,1,fp);
+    fwrite(ATA_INFO_BLOCK+0x2E,8,1,fp);
+    fwrite(ATA_INFO_BLOCK+0x36,36,1,fp);
+
+    // Pad file out to certain size
+    size_t padded_size = 0x2180000;
+    if(strstr(HDD_GAME_LABEL,"Fiesta") || strstr(HDD_GAME_LABEL,"Prime")){
+        pad_hdd_file(fp,padded_size);
+    }
+    fclose(fp);
+}
+
+
 static int parse_config(void* user, const char* section, const char* name, const char* value){
     if (strcmp(section, "ATA_HDD") == 0) {
         if (value == NULL) {
@@ -74,14 +107,24 @@ static int parse_config(void* user, const char* section, const char* name, const
         } else if (strcmp(name, "atainfo_serial") == 0) {
             update_ata_info_block(value, 0x36, 0x24);
             DBG_printf("[%s:%s] Loaded HDD Serial: %s", __FILE__, __FUNCTION__, value);
-        }else if(strcmp(name,"mountpoint_hd") == 0){
-            PIUTools_Filesystem_AddMountEntry(value,"/mnt/hd");
+        }else if(strcmp(name,"hdd_label") == 0){
+            strncpy(HDD_GAME_LABEL,value,sizeof(HDD_GAME_LABEL));
         }
     }
     return 1;
 }
 
 const PHookEntry plugin_init(const char* config_path){
-  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
-  return entries;
+    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+
+    // Add Mount Entry for HDD
+    PIUTools_Filesystem_AddMountEntry("/dev/hda1","/mnt/hd");
+
+    // Create Fake Writable HDD File
+    piutools_resolve_path("${SAVE_ROOT_PATH}/hdd.bin",fake_hdd_file_path);
+    create_hdd_file();
+    // Add Redirect Entries
+    PIUTools_Filesystem_Add("/dev/hda",fake_hdd_file_path);
+    PIUTools_Filesystem_Add("/dev/sda",fake_hdd_file_path);
+    return entries;
 }

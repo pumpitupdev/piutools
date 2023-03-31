@@ -27,10 +27,7 @@ static int get_function_address(const char* library_name, const char* function_n
     
     // Open our library or die.
     void* hLibrary = dlopen(library_name, RTLD_NOW);
-    if (hLibrary == NULL) {
-        fprintf(stderr, "%s: dlopen(): %s\n", __FUNCTION__, dlerror());
-        return 0;
-    }
+    if(hLibrary == NULL){return 0;}
     // Resolve our Symbol
     *pfunction_address = dlsym(hLibrary,function_name);
     // If we didn't resolve our symbol - die.
@@ -88,8 +85,6 @@ void load_plugin(const char* plugin_name){
             // Move to the next entry
             cur_entry++;
         }
-    } else {
-        DBG_printf("[%s] %s: no hook entries\n", __FUNCTION__, plugin_name);
     }
 }
 

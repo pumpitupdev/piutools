@@ -13,6 +13,7 @@
 // GL Stuff
 #include <GL/gl.h>
 #include <GL/glx.h>
+#include <GL/glxext.h>
 
 // For Frame Limiter
 #include <time.h>
@@ -71,6 +72,7 @@ static unsigned short target_display_height = 0;
 static float zoom_factor_x = 0.0f;
 static float zoom_factor_y = 0.0f;
 static unsigned int last_swap_time = 0;
+static unsigned char glx_swap_supported = 0;
 
 
 // -- HELPERS --
@@ -122,6 +124,25 @@ static void GetCurrentWindowDimensions(Display *dpy, GLXDrawable drawable){
   }
 }
 
+int is_extension_supported(const char *extensions, const char *extension) {
+    const char *start = extensions;
+    const char *where, *terminator;
+
+    while (1) {
+        where = strstr(start, extension);
+        if (!where) {
+            break;
+        }
+        terminator = where + strlen(extension);
+        if (where == start || *(where - 1) == ' ') {
+            if (*terminator == ' ' || *terminator == '\0') {
+                return 1;
+            }
+        }
+        start = terminator;
+    }
+    return 0;
+}
 
 
 // A modified version of the S3DResize function from the engine to support multimode adjustment.
@@ -224,13 +245,10 @@ static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsig
     }
 
     Window res = next_XCreateWindow(display,parent,x,y,width,height,border_width,depth,_class,visual,valuemask,attributes);
-    // Incorporate Threaded Window Listener - Doesn't work right with pillbox
- //   if(options_gfx_s3d.resizable_window){
- //     pthread_create(&window_change_event_thread, NULL, handle_window_events, (void *)display);
- //   }
-    
-   // next_glDrawPixels = (glDrawPixels_t)glXGetProcAddress((const GLubyte *)"glDrawPixels");
-    //next_glTexImage2D = (GLTexImage2D_t)glXGetProcAddress("glTexImage2D");
+
+  // We're going to check if glx swap is available and fix invalid calls as a result.
+    const char *extensions = glXQueryExtensionsString(display, DefaultScreen(display));
+    glx_swap_supported = is_extension_supported(extensions, "GLX_SGI_swap_control");
 
     return res;
 }
@@ -324,11 +342,53 @@ void s3d_glTexImage2D(GLenum target, GLint level, GLint internalformat,
                           border, format, type, pixels);
 }
 
+typedef int (*PFNGLXSWAPINTERVALSGIPROC)(int interval);
+PFNGLXSWAPINTERVALSGIPROC next_glXSwapIntervalSGI;
+static int s3d_glXSwapIntervalSGI(int interval){
+  if(glx_swap_supported == 0){return 0;}
+  return next_glXSwapIntervalSGI(interval);
+}
+
+/*
+  We may need this patch in the future for NXA 1.08, for now it seems fixed, but who knows:
+
+  static const float knownGood[] = {
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, -240.0f, 1.0f
+};
+
+   Pump periodically takes a shit on the modelview matrix if you don't
+   run it from its specialised OS. I have no idea why. However, the
+   quasi-identity matrix given above (it's transposed, btw) seems to
+   be the matrix it intends to construct when calling this function.
+
+void gluLookAt(double x0, double y0, double z0, double x1, double y1,
+    double z1, double x2, double y2, double z2)
+{
+    float m[16];
+    int i;
+
+    realLookAt(x0, y0, z0, x1, y1, z1, x2, y2, z2);
+    realGetFloatv(0x0BA6, m);
+
+    for (i = 0 ; i < 16 ; i++) {
+         if (isnan(m[i])) {
+            realLoadMatrixf(knownGood);
+            return;
+        }
+    }
+}
+
+*/
+
 static HookEntry entries[] = {   
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XCreateWindow", s3d_XCreateWindow, &next_XCreateWindow, 1),
-    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glDrawPixels", s3d_glDrawPixels, &next_glDrawPixels, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glDrawPixels", s3d_glDrawPixels, &next_glDrawPixels, 0),
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapBuffers", s3d_glXSwapBuffers, &next_glxSwapBuffers, 1),
-    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 0),            
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 0),
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapIntervalSGI", s3d_glXSwapIntervalSGI, &next_glXSwapIntervalSGI, 1),    
     {}       
 };
 

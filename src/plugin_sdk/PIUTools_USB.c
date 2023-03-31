@@ -29,15 +29,16 @@ void UpdateFakeDevices(void){
         char p_line[256];
         char s_line[256];
         if(PIUTools_USB_Devices[i].enabled == 0){continue;}
-        sprintf(t_line, "T:  Bus=%02d Lev=04 Prnt=01 Port=%02d Cnt=03 Dev=%3d Spd=%s  MxCh= 6\n", PIUTools_USB_Devices[i].bus, PIUTools_USB_Devices[i].port,PIUTools_USB_Devices[i].dev, PIUTools_USB_Devices[i].spd);
+        sprintf(t_line, "T:  Bus=%2d Lev=%2d Prnt=%2d Port=%2d Cnt=%2d Dev#=%3d Spd=%s  MxCh= 6\n", PIUTools_USB_Devices[i].bus,PIUTools_USB_Devices[i].lev,PIUTools_USB_Devices[i].prnt, PIUTools_USB_Devices[i].port,PIUTools_USB_Devices[i].cnt, PIUTools_USB_Devices[i].dev, PIUTools_USB_Devices[i].spd);
         fwrite(t_line,strlen(t_line),1,fp);
-        sprintf(p_line, "P:  Vendor=%4x ProdID=%4x Rev=%s\n", PIUTools_USB_Devices[i].vid, PIUTools_USB_Devices[i].pid, PIUTools_USB_Devices[i].rev);
+        sprintf(p_line, "P:  Vendor=%04x ProdID=%04x\n", PIUTools_USB_Devices[i].vid, PIUTools_USB_Devices[i].pid);
         fwrite(p_line,strlen(p_line),1,fp);
         sprintf(s_line, "S:  SerialNumber=%s\n", PIUTools_USB_Devices[i].serial);
         fwrite(s_line,strlen(s_line),1,fp);
         if(PIUTools_USB_Devices[i].cls == USB_CLASS_MASS_STORAGE){
-            const char* usb_storage_line = "I:  If#= 0 Alt= 0 #EPs= 2 Cls=08 Driver=usb-storage\n";
-            fwrite(usb_storage_line,strlen(usb_storage_line),1,fp);
+            char i_line[256] = {0x00};
+            sprintf(i_line,"I:  If#=%2d Alt=%2d #EPs=%2d Cls=%02x\n",0,0,2,USB_CLASS_MASS_STORAGE);
+            fwrite(i_line,strlen(i_line),1,fp);
             const char* e_line = "E:  Ad=82(I)\n";
             fwrite(e_line,strlen(e_line),1,fp);            
         }

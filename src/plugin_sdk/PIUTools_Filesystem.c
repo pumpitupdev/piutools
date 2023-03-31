@@ -9,7 +9,7 @@
 #include "dbg.h"
 #include "plugin.h"
 #include "PIUTools_Filesystem.h"
-// #define DEBUG_REDIRECT
+#define DEBUG_REDIRECT 1
 unsigned int num_subst_paths = 0;
 PathSubst PIUTools_Filesystem_Sub[MAX_FILESYSTEM_SUB];
 

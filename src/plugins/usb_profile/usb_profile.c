@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
-
+#include <glob.h>
 
 #include <plugin_sdk/ini.h>
 #include <plugin_sdk/dbg.h>
@@ -14,6 +14,10 @@
 #include <plugin_sdk/PIUTools_Input.h>
 
 #include "nx2/nx2_profile.h"
+#include "nxa/nxa_profile.h"
+#include "fiesta/fiesta_profile.h"
+#include "fex/fex_profile.h"
+#include "fiesta2/fiesta2_profile.h"
 
 #define USB_SERIAL_P1 "1NBJZ4PL"
 #define USB_SERIAL_P2 "1FGAT0YX"
@@ -24,6 +28,12 @@
 
 #define USB_VID 0x58F
 #define USB_PID 0x6387
+
+
+typedef int (*glob_func_t)(const char *, int, int (*)(const char *, int), glob_t *);
+glob_func_t next_glob = NULL;
+
+
 
 typedef struct _PLAYER_USB_INFO{
     PUSBDevice usb_device;
@@ -195,6 +205,73 @@ void *check_button_states(void *arg) {
     return NULL;
 }
 
+int usb_profile_glob(const char *pattern, int flags, int (*errfunc)(const char *, int), glob_t *pglob) {
+    // Check if the pattern matches your desired pattern
+    //printf("GLOB: %s\n",pattern);
+
+    if (strncmp(pattern, "/sys/bus/usb/devices",strlen("/sys/bus/usb/devices")) == 0) {
+        // Clear the glob_t structure
+        memset(pglob, 0, sizeof(glob_t));
+        char dev_path[32] = {0x00};
+        if(PlayerUSB.player[0].enabled){
+            char sys_usb_path_p1[64];
+            sprintf(sys_usb_path_p1,"/sys/bus/usb/devices/99-%d",PlayerUSB.player[0].usb_device->dev+1);
+            if (strncmp(pattern, sys_usb_path_p1,strlen(sys_usb_path_p1)) == 0) {
+                sscanf(PlayerUSB.player[0].fake_dev_path, "/dev/%[^1-9]", dev_path);
+            }
+        }
+        if(PlayerUSB.player[1].enabled){
+            char sys_usb_path_p2[64];
+            sprintf(sys_usb_path_p2,"/sys/bus/usb/devices/99-%d",PlayerUSB.player[1].usb_device->dev+1);
+            if (strncmp(pattern, sys_usb_path_p2,strlen(sys_usb_path_p2)) == 0) {
+                sscanf(PlayerUSB.player[1].fake_dev_path, "/dev/%[^1-9]", dev_path);
+            }
+        }
+
+
+        // Set the hardcoded path as the result
+        pglob->gl_pathc = 1;
+        pglob->gl_pathv = malloc(2 * sizeof(char *));
+        pglob->gl_pathv[0] = strdup(dev_path);
+        pglob->gl_pathv[1] = NULL;
+
+        // Return success (0)
+        return 0;
+    }
+
+    // If the pattern doesn't match, call the original glob function
+    int result = next_glob(pattern, flags, errfunc, pglob);
+    return result;
+}
+
+typedef int (*mount_func_t)(const char *source, const char *target,
+                            const char *filesystemtype, unsigned long mountflags,
+                            const void *data);
+mount_func_t next_mount;
+typedef int (*umount_func_t)(const char *target);
+umount_func_t next_umount;
+
+int usb_profile_mount(const char *source, const char *target,
+                            const char *filesystemtype, unsigned long mountflags,
+                            const void *data){
+
+                                printf("[%s] Block Mount %s %s\n",__FUNCTION__,source,target);
+                                return 0;
+}
+
+int usb_profile_umount(const char* target){
+                                printf("[%s] Block Umount: %s\n",__FUNCTION__,target);
+                                return 0;
+}
+
+
+static HookEntry entries[] = {
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "glob", usb_profile_glob, &next_glob, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "mount", usb_profile_mount, &next_mount, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "umount", usb_profile_umount, &next_umount, 1),
+    {}
+};
+
 const PHookEntry plugin_init(const char* config_path){
     PlayerUSB_Init();
     if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
@@ -213,27 +290,48 @@ const PHookEntry plugin_init(const char* config_path){
         PlayerUSB.player[i].usb_device = PIUTools_USB_Add_Device(USB_2_SPEED,USB_CLASS_MASS_STORAGE,USB_VID,USB_PID,PlayerUSB.player[i].serial,NULL,NULL,NULL);
 
 
-
+        
         switch(PlayerUSB.profile_type){
             case USB_PROFILE_NX2:
                 USB_Profile_Generate_NX2(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
-                write_scsi_blockdev_file(PlayerUSB.player[i].serial,PlayerUSB.player[i].fake_block_device_path,PlayerUSB.player[i].connected);
-                // I don't know about these - I have to look into this.
-                PIUTools_Filesystem_Add(PlayerUSB.player[i].scsi_path,PlayerUSB.player[i].fake_block_device_path);
-                char lun_path[128] = {0x00};
-                sprintf(lun_path,"/dev/scsi/host%d/bus0/target0/lun0/part1",i);
-                PIUTools_Filesystem_Add(lun_path,PlayerUSB.player[i].fake_block_device_path);                
+                break;
+            case USB_PROFILE_NXA:
+                USB_Profile_Generate_NXA(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
+                break;        
+            case USB_PROFILE_FIESTA:
+                USB_Profile_Generate_Fiesta(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
+                break;
+            case USB_PROFILE_FIESTAEX:            
+                USB_Profile_Generate_FiestaEX(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
+            break;        
+            case USB_PROFILE_FIESTA2:
+                USB_Profile_Generate_Fiesta2(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
                 break;
             default:
                 break;
         }
+
+        // Set up SCSI Path/Block Stuff
+        char lun_path[128] = {0x00};
+        sprintf(lun_path,"/dev/scsi/host%d/bus0/target0/lun0/part1",i);
+        PIUTools_Filesystem_Add(lun_path,PlayerUSB.player[i].fake_block_device_path);                
+        write_scsi_blockdev_file(PlayerUSB.player[i].serial,PlayerUSB.player[i].fake_block_device_path,PlayerUSB.player[i].connected);
+        PIUTools_Filesystem_Add(PlayerUSB.player[i].scsi_path,PlayerUSB.player[i].fake_block_device_path);
+
         // This Sets the Mount Entry in /proc/mounts
         PIUTools_Filesystem_AddMountEntry(PlayerUSB.player[i].fake_dev_path,PlayerUSB.player[i].mount_path);
+        PIUTools_Filesystem_Add(PlayerUSB.player[i].fake_dev_path,PlayerUSB.player[i].fake_block_device_path);
         // This redirects the /mnt/n to our save profile
-        PIUTools_Filesystem_Add(PlayerUSB.player[i].mount_path,PlayerUSB.player[i].save_profile_folder_path);        
+        PIUTools_Filesystem_Add(PlayerUSB.player[i].mount_path,PlayerUSB.player[i].save_profile_folder_path); 
+        // This redirects /mnt/n/ to our save profile because wtf
+        char mnt_slash[1024];
+        char save_slash[1024];
+        sprintf(mnt_slash,"%s/",PlayerUSB.player[i].mount_path);
+        sprintf(save_slash,"%s/",PlayerUSB.player[i].save_profile_folder_path);
+        PIUTools_Filesystem_Add(mnt_slash,save_slash);        
 
     }
     pthread_t button_check_thread;
     pthread_create(&button_check_thread, NULL, check_button_states, NULL);
-  return NULL;
+  return entries;
 }

@@ -1,8 +1,14 @@
-T:  Bus=99 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#= 1 Spd=12  MxCh= 6
-P:  Vendor=0547 ProdID=1002 Rev=
+T:  Bus=99 Lev=04 Prnt=01 Port=01 Cnt=03 Dev=  1 Spd=480  MxCh= 6
+P:  Vendor= 58f ProdID=6387 Rev=
+S:  SerialNumber=1NBJZ4PL
+I:  If#= 0 Alt= 0 #EPs= 2 Cls=08 Driver=usb-storage
+E:  Ad=82(I)
+
+T:  Bus=99 Lev=04 Prnt=01 Port=02 Cnt=03 Dev=  2 Spd=12  MxCh= 6
+P:  Vendor= 547 ProdID=1002 Rev=
 S:  SerialNumber=MK6IO
 
-T:  Bus=99 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#= 2 Spd=480  MxCh= 6
-P:  Vendor=0d2f ProdID=1004 Rev=
+T:  Bus=99 Lev=04 Prnt=01 Port=03 Cnt=03 Dev=  3 Spd=480  MxCh= 6
+P:  Vendor= d2f ProdID=1004 Rev=
 S:  SerialNumber=TKT123
 

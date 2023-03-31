@@ -113,5 +113,7 @@ exe_path=$rom_game_root/version/$game_version/piu
 
 # GOGOGO
 #exec ltrace -e '*' -o /mnt/c/repos/piutools_ltrace.txt $exe_path game
+#exec ltrace -C -o /mnt/c/repos/piutools_ltrace.txt $exe_path game
 #exec strace -o /mnt/c/repos/piutools_strace.txt $exe_path game
 exec $exe_path game
+#exec gdb -ex run --args $exe_path game
