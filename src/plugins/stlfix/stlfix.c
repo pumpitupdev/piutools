@@ -26,7 +26,7 @@ int get_function_byname(void* hLibrary, const char* function_name, void** pfunct
 
 const PHookEntry plugin_init(const char* config_path){
     // Resolve path to old cpp library.
-    piutools_resolve_path("${GAME_ROM_PATH}/libs/libstdc++.so.6.0.8",old_cpp_lib_path);
+    piutools_resolve_path("${GAME_ROM_PATH}/libs/libstdc++.so.6.0.13",old_cpp_lib_path);
     // Get Handle - If we can't do this, the plugin won't work.
     old_cpp_lib_handle = dlopen(old_cpp_lib_path,RTLD_NOW);
     if(old_cpp_lib_handle == NULL){
@@ -42,6 +42,7 @@ const PHookEntry plugin_init(const char* config_path){
     const char* name;     
      while (plthook_enum(plthook, &pos, &name, &addr) == 0) {
         // This is a shitty way to do it but what can ya do?
+        //if(name != NULL && (!strncmp(name,"_ZNK",4) || !strncmp(name,"_ZNS",4))){
         if(name != NULL && !strncmp(name,"_Z",2)){
             void* old_func_address = NULL;
             if(get_function_byname(old_cpp_lib_handle,name,&old_func_address)){

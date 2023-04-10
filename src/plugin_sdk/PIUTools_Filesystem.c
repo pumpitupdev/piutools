@@ -79,14 +79,14 @@ PPathSubst PIUTools_Filesystem_Add(const char* path_from, const char* path_to){
             path_from += strlen(SEARCH_FILE_TAG);
         }        
 
-        PIUTools_Filesystem_Sub[num_subst_paths].src_path = malloc(strlen(path_from)+1);
+        PIUTools_Filesystem_Sub[num_subst_paths].src_path = (char*)malloc(strlen(path_from)+1);
         strcpy(PIUTools_Filesystem_Sub[num_subst_paths].src_path,path_from);
         // We may have to deal with piutools wildcards for resolved paths so let's do that.
         char resolved_path[1024] = {0x00};
         piutools_resolve_path(path_to,resolved_path);
         if(strlen(resolved_path) > 1){path_to = resolved_path;}
         
-        PIUTools_Filesystem_Sub[num_subst_paths].replacement_path = malloc(strlen(path_to)+1);
+        PIUTools_Filesystem_Sub[num_subst_paths].replacement_path = (char*)malloc(strlen(path_to)+1);
         strcpy(PIUTools_Filesystem_Sub[num_subst_paths].replacement_path,path_to);
         DBG_printf("[%s] %s => %s",__FILE__,PIUTools_Filesystem_Sub[num_subst_paths].src_path,PIUTools_Filesystem_Sub[num_subst_paths].replacement_path);
         num_subst_paths++;

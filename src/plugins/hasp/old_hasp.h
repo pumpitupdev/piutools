@@ -23,7 +23,7 @@ struct sec_hasp_key {
  * @param key_data Pointer to loaded key data (key table)
  * @param len Length of the buffer
  */
-void sec_hasp_init(const uint8_t *key_data, size_t len, int language_fid);
+void sec_hasp_init(const uint8_t *key_data, size_t len, char* str_fids);
 
 int sec_hasp_api_login(int feature, int vendor_code, int *handle);
 

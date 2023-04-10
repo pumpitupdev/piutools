@@ -11,6 +11,6 @@
  * @param key_data Pointer to loaded key data (key table)
  * @param len Length of the buffer
  */
-void patch_hasp_init(const unsigned char *key_data, size_t len,int language_fid);
+void patch_hasp_init(const unsigned char *key_data, size_t len,char* str_fids);
 
 #endif

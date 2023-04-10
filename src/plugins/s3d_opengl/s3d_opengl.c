@@ -9,6 +9,8 @@
 
 // X11 Stuff
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xlibint.h>
 
 // GL Stuff
 #include <GL/gl.h>
@@ -29,7 +31,8 @@ typedef void (*glDrawPixels_t)(GLsizei, GLsizei, GLenum, GLenum, const GLvoid*);
 typedef void (*GLTexImage2D_t)(GLenum target, GLint level, GLint internalformat,
                                  GLsizei width, GLsizei height, GLint border,
                                  GLenum format, GLenum type, const void *pixels);
-
+typedef Display* (*XOpenDisplay_t)(char*);
+static XOpenDisplay_t next_XOpenDisplay;
 static XCreateWindow_t next_XCreateWindow;
 static glxSwapBuffers_t next_glxSwapBuffers;
 static glDrawPixels_t next_glDrawPixels;
@@ -72,8 +75,10 @@ static unsigned short target_display_height = 0;
 static float zoom_factor_x = 0.0f;
 static float zoom_factor_y = 0.0f;
 static unsigned int last_swap_time = 0;
-static unsigned char glx_swap_supported = 0;
-
+static unsigned char glx_sgi_swap_supported = 0;
+static unsigned char glx_ext_swap_supported = 0;
+static unsigned char glx_mesa_swap_supported = 0;
+static unsigned char glx_oml_swap_supported = 1;
 
 // -- HELPERS --
 
@@ -248,9 +253,25 @@ static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsig
 
   // We're going to check if glx swap is available and fix invalid calls as a result.
     const char *extensions = glXQueryExtensionsString(display, DefaultScreen(display));
-    glx_swap_supported = is_extension_supported(extensions, "GLX_SGI_swap_control");
+    glx_sgi_swap_supported = is_extension_supported(extensions, "GLX_SGI_swap_control");
+    glx_mesa_swap_supported = is_extension_supported(extensions,"GLX_MESA_swap_control");
+    glx_ext_swap_supported = is_extension_supported(extensions,"GLX_EXT_swap_control");
+    glx_oml_swap_supported = is_extension_supported(extensions,"GLX_OML_swap_method");
+    printf("[%s] Swap Control Support: SGI:%d MESA:%d EXT:%d OML:%d\n",__FILE__,glx_sgi_swap_supported,glx_mesa_swap_supported,glx_ext_swap_supported,glx_oml_swap_supported);
 
     return res;
+}
+
+
+
+Display* s3d_XOpenDisplay(char *display_name){
+  Display* dpy = next_XOpenDisplay(display_name);
+  if(options_gfx_s3d.screen_height == 0){
+    return dpy;
+  }
+  int screen = DefaultScreen(dpy);
+  dpy->screens[screen].height = options_gfx_s3d.screen_height;
+  return dpy;
 }
 
  #ifndef GL_UNSIGNED_SHORT_5_6_5
@@ -345,7 +366,7 @@ void s3d_glTexImage2D(GLenum target, GLint level, GLint internalformat,
 typedef int (*PFNGLXSWAPINTERVALSGIPROC)(int interval);
 PFNGLXSWAPINTERVALSGIPROC next_glXSwapIntervalSGI;
 static int s3d_glXSwapIntervalSGI(int interval){
-  if(glx_swap_supported == 0){return 0;}
+  if(glx_sgi_swap_supported == 0){return 0;}
   return next_glXSwapIntervalSGI(interval);
 }
 
@@ -383,12 +404,15 @@ void gluLookAt(double x0, double y0, double z0, double x1, double y1,
 
 */
 
+
+
 static HookEntry entries[] = {   
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XCreateWindow", s3d_XCreateWindow, &next_XCreateWindow, 1),
-    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glDrawPixels", s3d_glDrawPixels, &next_glDrawPixels, 0),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glDrawPixels", s3d_glDrawPixels, &next_glDrawPixels, 1),
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapBuffers", s3d_glXSwapBuffers, &next_glxSwapBuffers, 1),
-    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 0),
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapIntervalSGI", s3d_glXSwapIntervalSGI, &next_glXSwapIntervalSGI, 1),    
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 1),
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapIntervalSGI", s3d_glXSwapIntervalSGI, &next_glXSwapIntervalSGI, 1),      
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XOpenDisplay", s3d_XOpenDisplay, &next_XOpenDisplay, 1),    
     {}       
 };
 
@@ -403,7 +427,7 @@ static int parse_config(void* user, const char* section, const char* name, const
         }   
         if(strcmp(name,"colormap_fix") == 0){
             if(value != NULL){options_gfx_s3d.colormap_fix = strtoul(value,&ptr,10);}
-        }        
+        }  
         if(strcmp(name,"screen_width") == 0){
             if(value != NULL){options_gfx_s3d.screen_width = strtoul(value,&ptr,10);}
         }         

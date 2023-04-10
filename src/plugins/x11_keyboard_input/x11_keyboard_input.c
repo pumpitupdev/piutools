@@ -22,6 +22,11 @@
 #include <plugin_sdk/PIUTools_Input.h>
 
 
+int (*next_XGrabKeyboard)(Display *display, Window grab_window, Bool owner_events, int pointer_mode, int keyboard_mode, Time time);
+
+int block_XGrabKeyboard(Display *display, Window grab_window, Bool owner_events,int pointer_mode, int keyboard_mode, Time time){
+    return 0;
+}
 
 int (*next_XNextEvent)(Display *display, XEvent *event_return);
 
@@ -120,6 +125,7 @@ int x11ki_XNextEvent(Display *display, XEvent *event){
 
 static HookEntry entries[] = {
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XNextEvent", x11ki_XNextEvent, &next_XNextEvent, 1),                      
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XGrabKeyboard", block_XGrabKeyboard, &next_XGrabKeyboard, 1),                      
     {}
 };
 

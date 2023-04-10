@@ -18,6 +18,7 @@
 #include "fiesta/fiesta_profile.h"
 #include "fex/fex_profile.h"
 #include "fiesta2/fiesta2_profile.h"
+#include "prime/prime_profile.h"
 
 #define USB_SERIAL_P1 "1NBJZ4PL"
 #define USB_SERIAL_P2 "1FGAT0YX"
@@ -306,6 +307,10 @@ const PHookEntry plugin_init(const char* config_path){
             break;        
             case USB_PROFILE_FIESTA2:
                 USB_Profile_Generate_Fiesta2(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
+                break;
+            case USB_PROFILE_PRIME:
+                USB_Profile_Generate_PRIME(PlayerUSB.player[i].save_profile_folder_path, PlayerUSB.player[i].name, PlayerUSB.player[i].serial, PlayerUSB.player[i].avatar_id);
+                // TODO: Add Fake Gameserver Profile Registration Here
                 break;
             default:
                 break;

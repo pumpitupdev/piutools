@@ -32,7 +32,7 @@ static const uint8_t patch_hasp_id_sig[] = {
 	0x55, 0x57, 0x56, 0x53, 0x83, 0xEC, 0x3C, 0xE8};
 
 
-void patch_hasp_init(const uint8_t *key_data, size_t len, int language_fid){
+void patch_hasp_init(const uint8_t *key_data, size_t len, char* str_fids){
   void *func_api_login;
   void *func_api_logout;
   void *func_api_decrypt;
@@ -73,13 +73,14 @@ void patch_hasp_init(const uint8_t *key_data, size_t len, int language_fid){
   util_patch_function((uintptr_t) func_api_decrypt, sec_hasp_api_decrypt);
   util_patch_function((uintptr_t) func_api_getinfo, sec_hasp_get_info);
 
-  sec_hasp_init(key_data, len,language_fid);
+  sec_hasp_init(key_data, len,str_fids);
 
 
   //printf("Initialized");
 }
 
 static char dongle_file_path[1024] = {0x00};
+static char hasp_fids[128] = {0x00};
 static int region_featureid = 0;
 static int parse_config(void* user, const char* section, const char* name, const char* value){
     
@@ -89,12 +90,11 @@ static int parse_config(void* user, const char* section, const char* name, const
             piutools_resolve_path(value,dongle_file_path);    
             DBG_printf("[%s] HASP Dongle File Loaded: %s",__FILE__,dongle_file_path);        
         }
-        if(strcmp(name,"region_featureid") == 0){
-            char *ptr;            
-            if(value != NULL){
-                region_featureid = strtoul(value,&ptr,10);
-            }
-        }        
+        if(strcmp(name,"feature_ids") == 0){
+            if(value == NULL){return 0;}
+            strncpy(hasp_fids,value,sizeof(hasp_fids));
+            DBG_printf("[%s] HASP Dongle File Loaded: %s",__FILE__,dongle_file_path);        
+        }
         
     }
     return 1;
@@ -109,7 +109,7 @@ const PHookEntry plugin_init(const char* config_path){
     unsigned char* hasp_data = malloc(hasp_file_size);
     fread(hasp_data,hasp_file_size,1,fp);
     fclose(fp);
-    patch_hasp_init(hasp_data,hasp_file_size,region_featureid);
+    patch_hasp_init(hasp_data,hasp_file_size,hasp_fids);
 
   return NULL;
 }

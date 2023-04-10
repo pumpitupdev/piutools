@@ -104,16 +104,24 @@ export PIUTOOLS_ROM_PATH=$(realpath "./rom")
 cd "$rom_game_root"
 # Set Executable Environment Stuff
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(realpath "./libs")
-export LD_PRELOAD=$LD_PRELOAD:$PIUTOOLS_PATH/piutools.so
+preload_cmd=$LD_PRELOAD:$PIUTOOLS_PATH/piutools.so
+export LD_PRELOAD=$preload_cmd
 # Set Debug Logging for Now
 export DBGLOG=1
-
+#export LIBGL_ALWAYS_SOFTWARE=1
 # Set Executable Path
 exe_path=$rom_game_root/version/$game_version/piu
 
 # GOGOGO
+#env LD_PRELOAD=$preload_cmd $exe_path game
+#exec $exe_path game
+
+#export LD_PRELOAD=""
+
 #exec ltrace -e '*' -o /mnt/c/repos/piutools_ltrace.txt $exe_path game
 #exec ltrace -C -o /mnt/c/repos/piutools_ltrace.txt $exe_path game
+
 #exec strace -o /mnt/c/repos/piutools_strace.txt $exe_path game
-exec $exe_path game
-#exec gdb -ex run --args $exe_path game
+
+#exec gdb -ex "set env LD_PRELOAD=$preload_cmd" -ex run --args $exe_path /home/rfx/prime/game/
+exec gdb -ex "set env LD_PRELOAD=$preload_cmd" -ex run --args $exe_path game

@@ -71,11 +71,22 @@ hasp.plugin:
 microdog.plugin:
 	cc -shared -m32 $(PLUGIN_INCLUDES) src/plugins/microdog/microdog/*.c -I src/plugins/microdog/microdog src/plugins/microdog/microdog.c -o $(PLUGIN_BUILD_ROOT)/$@
 
+network.plugin:
+	cc -shared -m32 src/plugins/network/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+
 s3d_opengl.plugin:
 	cc -shared -m32 -fPIC src/plugins/s3d_opengl/s3d_opengl.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
+system_info.plugin:
+	cc -shared -m32 src/plugins/system_info/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
 usbfs_null.plugin:
 	cc -shared -m32 -fPIC src/plugins/usbfs_null/usbfs_null.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+update_dir.plugin:
+	cc -shared -m32 src/plugins/update_dir/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
 
 stlfix.plugin:
 	cc -shared -m32 src/plugins/stlfix/*.c -I src -ldl -o $(PLUGIN_BUILD_ROOT)/$@
@@ -84,7 +95,11 @@ ticket_dispenser.plugin:
 	cc -shared -m32 -fPIC src/plugins/ticket_dispenser/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
 
 usb_profile.plugin:
-	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c src/plugins/usb_profile/nx2/*.c src/plugins/usb_profile/nxa/*.c src/plugins/usb_profile/fex/*.c src/plugins/usb_profile/fiesta/*.c src/plugins/usb_profile/fiesta2/*.c -lpthread $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c src/plugins/usb_profile/nx2/*.c src/plugins/usb_profile/nxa/*.c src/plugins/usb_profile/fex/*.c src/plugins/usb_profile/fiesta/*.c src/plugins/usb_profile/fiesta2/*.c src/plugins/usb_profile/prime/*.c -lpthread $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+ucs.plugin:
+	cc -shared -m32 -fPIC src/plugins/ucs/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
 
 # --- WORK IN PROGRESS ---
 usbfs_emulator.plugin:

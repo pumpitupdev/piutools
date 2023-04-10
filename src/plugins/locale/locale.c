@@ -26,21 +26,8 @@ void hook_core_piu_utils_fix_locale()
   }  
 }
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if(strcmp(section,"LOCALE") == 0){
-        if(strcmp(name,"locale_fix") == 0){
-            if(value == NULL){return 0;}
-            char *ptr; 
-            unsigned long lv = strtoul(value,&ptr,10);
-            if(lv == 1){
-                hook_core_piu_utils_fix_locale();
-            }                       
-        }                 
-    }
-    return 1;
-}
 
 const PHookEntry plugin_init(const char* config_path){  
-    ini_parse(config_path,parse_config,NULL);
+    hook_core_piu_utils_fix_locale();
     return NULL;
 }

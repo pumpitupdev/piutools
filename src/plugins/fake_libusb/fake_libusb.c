@@ -155,6 +155,7 @@ usb_init_t next_usb_init;
 static int libusb_initialized = 0;
 int fake_usb_init(void){
     if(libusb_initialized){return 0;}
+    libusb_initialized=1;
     return next_usb_init();
 }
 

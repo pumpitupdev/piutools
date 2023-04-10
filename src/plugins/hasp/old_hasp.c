@@ -38,14 +38,35 @@ struct sec_hasp_key_table {
 3005 -> China
 3006 -> Japan
  */
-static uint32_t sec_hasp_features[] = {0, 3001};
+static uint32_t* sec_hasp_features=NULL;
+static size_t num_sec_hasp_features=0;
 static const uint32_t sec_hasp_key_id = 0x1234;
 static struct sec_hasp_key_table sec_hasp_keys;
 
+int* createIntArray(char* input, int* size)
+{
+    int i = 0, count = 0;
+    char *p = input;
+    while (*p) {
+        if (*p == ',') {
+            count++;
+        }
+        p++;
+    }
+    count++; // add one for the last integer
+    *size = count;
+    int *arr = (int*)malloc(count * sizeof(int));
+    char *token = strtok(input, ",");
+    while (token != NULL) {
+        arr[i++] = atoi(token);
+        token = strtok(NULL, ",");
+    }
+    return arr;
+}
 
 int is_feature_present(int feature){
         int i;
-        for(i=0;i<2;i++){
+        for(i=0;i<num_sec_hasp_features;i++){
                 if(feature == sec_hasp_features[i]){
                         return 1;
                 }
@@ -53,10 +74,12 @@ int is_feature_present(int feature){
         return 0;
 }
 
-void sec_hasp_init(const uint8_t *key_data, size_t len, int language_fid)
+
+void sec_hasp_init(const uint8_t *key_data, size_t len, char* str_fids)
 {
     printf("SEC HASP INIT\n");
-    sec_hasp_features[1] = language_fid;
+    sec_hasp_features = createIntArray(str_fids,&num_sec_hasp_features);
+    
   sec_hasp_keys.nkeys = len / sizeof(struct sec_hasp_key);
   sec_hasp_keys.keys =
       malloc(sizeof(struct sec_hasp_key) * sec_hasp_keys.nkeys);
@@ -124,10 +147,7 @@ int sec_hasp_api_decrypt(int handle, void *buffer, size_t length)
             sec_hasp_keys.keys[i].req,
             sizeof(sec_hasp_keys.keys[i].req))) {
 
-      printf(
-         "Decrypt %u -> %u\n",
-        *((uint64_t *) sec_hasp_keys.keys[i].req),
-        *((uint64_t *) sec_hasp_keys.keys[i].resp));
+    
       memcpy(
           buffer,
           sec_hasp_keys.keys[i].resp,

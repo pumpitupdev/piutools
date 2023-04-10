@@ -85,7 +85,7 @@ void create_hdd_file(void){
 
     // Pad file out to certain size
     size_t padded_size = 0x2180000;
-    if(strstr(HDD_GAME_LABEL,"Fiesta") || strstr(HDD_GAME_LABEL,"Prime")){
+    if(strstr(HDD_GAME_LABEL,"Fiesta") || strstr(HDD_GAME_LABEL,"PRIME")){
         pad_hdd_file(fp,padded_size);
     }
     fclose(fp);
@@ -98,15 +98,15 @@ static int parse_config(void* user, const char* section, const char* name, const
             return 0;
         }
 
-        if (strcmp(name, "atainfo_model") == 0) {
+        if (strcmp(name, "atainfo_serial") == 0) {
             update_ata_info_block(value, 0x14, 0x14);
-            DBG_printf("[%s:%s] Loaded HDD Model: %s", __FILE__, __FUNCTION__, value);
+            DBG_printf("[%s:%s] Loaded HDD Serial: %s", __FILE__, __FUNCTION__, value);
         } else if (strcmp(name, "atainfo_firmware") == 0) {
             update_ata_info_block(value, 0x2E, 8);
             DBG_printf("[%s:%s] Loaded HDD Firmware: %s", __FILE__, __FUNCTION__, value);
-        } else if (strcmp(name, "atainfo_serial") == 0) {
+        } else if (strcmp(name, "atainfo_model") == 0) {
             update_ata_info_block(value, 0x36, 0x24);
-            DBG_printf("[%s:%s] Loaded HDD Serial: %s", __FILE__, __FUNCTION__, value);
+            DBG_printf("[%s:%s] Loaded HDD Model: %s", __FILE__, __FUNCTION__, value);
         }else if(strcmp(name,"hdd_label") == 0){
             strncpy(HDD_GAME_LABEL,value,sizeof(HDD_GAME_LABEL));
         }

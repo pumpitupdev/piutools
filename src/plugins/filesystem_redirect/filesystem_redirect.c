@@ -13,6 +13,8 @@
 #include <plugin_sdk/plugin.h>
 #include <plugin_sdk/PIUTools_Filesystem.h>
 
+typedef int (*mkdir_func)(const char *, mode_t);
+mkdir_func next_mkdir;
 
 typedef FILE* (*fopen_t)(const char*, const char*);
 fopen_t next_fopen;
@@ -24,6 +26,11 @@ open_func_t next_open;
 int redirect_fs_open(const char *pathname, int flags) {
     char n_path[1024] = {0x00};    
     return next_open(PIUTools_Filesystem_Resolve_Path(pathname,n_path), flags);
+}
+
+int redirect_fs_mkdir(const char *pathname, mode_t mode) {
+    char n_path[1024] = {0x00};    
+    return next_mkdir(PIUTools_Filesystem_Resolve_Path(pathname,n_path), mode);    
 }
 
 FILE * redirect_fs_fopen(const char * filename, const char * mode){
@@ -66,6 +73,7 @@ int redirect_fs_stat64(const char* pathname, void*statbuf){
 
 static HookEntry entries[] = {
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","open", redirect_fs_open, &next_open, 1),
+    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","mkdir", redirect_fs_mkdir, &next_mkdir, 1),
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","opendir", redirect_fs_opendir, &next_opendir, 1),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","stat64", redirect_fs_stat64, &next_stat64, 1),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","fopen", redirect_fs_fopen, &next_fopen, 1),
