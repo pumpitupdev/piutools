@@ -9,9 +9,7 @@
 #include <sys/io.h>
 #include <sys/mman.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 #include "at93c86.h"
 
@@ -70,24 +68,9 @@ void hex_string_to_8_byte_array(const char *hex_string, unsigned char *byte_arra
     }
 }
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if (strcmp(section, "EEPROM") == 0) {
-        if (value == NULL) {
-            return 0;
-        }
-
-        if (strcmp(name, "file") == 0) {
-            piutools_resolve_path(value,eeprom_path);
-            DBG_printf("[%s] Loaded AT93C86C EEPROM: %s", __FILE__, eeprom_path);          
-        }else{
-            return 0;
-        }
-    }
-    return 1;
-}
-
-const PHookEntry plugin_init(const char* config_path){  
-    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+const PHookEntry plugin_init(void){  
+    PIUTools_Path_Resolve("${SAVE_ROOT_PATH}/EEPROM.BIN",eeprom_path);
+    DBG_printf("[%s] Loaded AT93C86C EEPROM: %s", __FILE__, eeprom_path);   
     AT93C86_Init(eeprom_path);
     ioperm(IOPORT_AT93C86_IN, 1, 0);
     ioperm(IOPORT_AT93C86_CAT702_OUT, 1, 0);

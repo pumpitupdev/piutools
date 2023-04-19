@@ -1,13 +1,12 @@
 
+#define _LARGEFILE64_SOURCE
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include "fiesta2_profile.h"
-
-#include <plugin_sdk/PIUTools_Filesystem.h>
-
 
 #define BASE 65521
 
@@ -40,6 +39,11 @@ static void usb_encrypt(uint8_t *buf, size_t len, int custom_seed){
 	}
 }
 
+static int Path_Exists(const char* path){
+     struct stat st;
+     return stat(path, &st) != -1;
+}
+
 static unsigned char idk_data[16];
 static unsigned char idk_data_2[32672] ;
 
@@ -52,7 +56,7 @@ void USB_Profile_Generate_Fiesta2(const char* profile_path, const char* player_n
     sprintf(save_file_path,"%s/%s",profile_path,save_filename);
     sprintf(rank_file_path,"%s/%s",profile_path,rank_filename);
 
-    if(!PIUTools_Filesystem_Path_Exist(save_file_path)){
+    if(!Path_Exists(save_file_path)){
         PFiesta2SaveFile save_file = calloc(1,sizeof(Fiesta2SaveFile));
         size_t save_size = sizeof(Fiesta2SaveFile);
         
@@ -81,7 +85,7 @@ void USB_Profile_Generate_Fiesta2(const char* profile_path, const char* player_n
         free(save_file);
         chmod(save_file_path, 0666);
     }
-    if(!PIUTools_Filesystem_Path_Exist(rank_file_path)){
+    if(!Path_Exists(rank_file_path)){
         PFiesta2RankFile rank_file = calloc(1,sizeof(Fiesta2RankFile));
         size_t rank_size = sizeof(Fiesta2RankFile);
 

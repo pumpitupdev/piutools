@@ -6,12 +6,7 @@
 #include <unistd.h>
 #include <glob.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
-#include <plugin_sdk/PIUTools_USB.h>
-#include <plugin_sdk/PIUTools_Filesystem.h>
-#include <plugin_sdk/PIUTools_Input.h>
+#include <PIUTools_SDK.h>
 
 #include "nx2/nx2_profile.h"
 #include "nxa/nxa_profile.h"
@@ -82,55 +77,6 @@ void PlayerUSB_Init(void){
     strcpy(PlayerUSB.player[1].scsi_path,"/proc/scsi/usb-storage-1/1");    
 }
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if (strcmp(section, "USB_PROFILE") == 0) {
-        if (value == NULL) {
-            return 0;
-        }
-        if (strcmp(name, "game_type") == 0) {
-            if(strcmp(value,"nx2") == 0){
-                PlayerUSB.profile_type = USB_PROFILE_NX2;
-            }else if(strcmp(value,"nxa") == 0){
-                PlayerUSB.profile_type = USB_PROFILE_NXA;
-            }else if(strcmp(value,"fiesta") == 0){
-                PlayerUSB.profile_type = USB_PROFILE_FIESTA;
-            }else if(strcmp(value,"fiestaex") == 0){
-                PlayerUSB.profile_type = USB_PROFILE_FIESTAEX;
-            }else if(strcmp(value,"fiesta2") == 0){
-                PlayerUSB.profile_type = USB_PROFILE_FIESTA2;
-            }else if(strcmp(value,"prime") == 0){
-                PlayerUSB.profile_type = USB_PROFILE_PRIME;
-            }
-        }
-        if (strcmp(name, "p1_name") == 0) {
-            strncpy(PlayerUSB.player[0].name,value,sizeof(PlayerUSB.player[0].name));
-            PlayerUSB.player[0].enabled = 1;
-        }
-        if (strcmp(name, "p1_avatar") == 0) {
-            char *ptr;            
-            if(value != NULL){
-              PlayerUSB.player[0].avatar_id = strtoul(value,&ptr,10);
-            }
-        }  
-        if (strcmp(name, "p1_fakedev") == 0) {
-            strcpy(PlayerUSB.player[0].fake_dev_path,value);
-        }
-        if (strcmp(name, "p2_name") == 0) {
-            strncpy(PlayerUSB.player[1].name,value,sizeof(PlayerUSB.player[1].name));
-            PlayerUSB.player[1].enabled = 1;
-        }  
-        if (strcmp(name, "p2_avatar") == 0) {
-            char *ptr;            
-            if(value != NULL){
-              PlayerUSB.player[1].avatar_id = strtoul(value,&ptr,10);
-            }
-        }
-        if (strcmp(name, "p2_fakedev") == 0) {
-            strcpy(PlayerUSB.player[1].fake_dev_path,value);
-        }                                
-    }
-    return 1;
-}
 
 void write_scsi_blockdev_file(const char* serial_number, const char* scsi_path, int state){
     FILE* fp = fopen(scsi_path,"wb");
@@ -172,7 +118,7 @@ void *check_button_states(void *arg) {
                 state_str = "OUT";
             }
 
-            printf("[USB_PROFILE] Player 1 USB Profile %s\n",state_str);
+            DBG_printf("[USB_PROFILE] Player 1 USB Profile %s\n",state_str);
             if(PlayerUSB.player[0].connected){
                 PIUTools_USB_Connect_Device(PlayerUSB.player[0].usb_device->dev);  
             }else{
@@ -273,21 +219,54 @@ static HookEntry entries[] = {
     {}
 };
 
-const PHookEntry plugin_init(const char* config_path){
+static char config_game_type[32] = {0x00};
+static HookConfigEntry plugin_config[] = {
+  CONFIG_ENTRY("USB_PROFILE","game_type",CONFIG_TYPE_STRING,config_game_type,sizeof(config_game_type)),
+  CONFIG_ENTRY("USB_PROFILE","p1_name",CONFIG_TYPE_STRING,PlayerUSB.player[0].name,sizeof(PlayerUSB.player[0].name)),
+  CONFIG_ENTRY("USB_PROFILE","p2_name",CONFIG_TYPE_STRING,PlayerUSB.player[1].name,sizeof(PlayerUSB.player[1].name)),
+  CONFIG_ENTRY("USB_PROFILE","p1_fakedev",CONFIG_TYPE_STRING,PlayerUSB.player[0].fake_dev_path,sizeof(PlayerUSB.player[0].fake_dev_path)),
+  CONFIG_ENTRY("USB_PROFILE","p2_fakedev",CONFIG_TYPE_STRING,PlayerUSB.player[1].fake_dev_path,sizeof(PlayerUSB.player[1].fake_dev_path)),
+  CONFIG_ENTRY("USB_PROFILE","p1_avatar",CONFIG_TYPE_INT,&PlayerUSB.player[0].avatar_id,sizeof(PlayerUSB.player[0].avatar_id)),  
+  CONFIG_ENTRY("USB_PROFILE","p2_avatar",CONFIG_TYPE_INT,&PlayerUSB.player[1].avatar_id,sizeof(PlayerUSB.player[1].avatar_id)),
+  {}
+};
+
+const PHookEntry plugin_init(void){
     PlayerUSB_Init();
-    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+    PIUTools_Config_Read(plugin_config);    
+    if(strcmp(config_game_type,"nx2") == 0){
+        PlayerUSB.profile_type = USB_PROFILE_NX2;
+    }else if(strcmp(config_game_type,"nxa") == 0){
+        PlayerUSB.profile_type = USB_PROFILE_NXA;
+    }else if(strcmp(config_game_type,"fiesta") == 0){
+        PlayerUSB.profile_type = USB_PROFILE_FIESTA;
+    }else if(strcmp(config_game_type,"fiestaex") == 0){
+        PlayerUSB.profile_type = USB_PROFILE_FIESTAEX;
+    }else if(strcmp(config_game_type,"fiesta2") == 0){
+        PlayerUSB.profile_type = USB_PROFILE_FIESTA2;
+    }else if(strcmp(config_game_type,"prime") == 0){
+        PlayerUSB.profile_type = USB_PROFILE_PRIME;
+    }
+
+    if(strlen(PlayerUSB.player[0].name)){
+        PlayerUSB.player[0].enabled = 1;
+    }
+
+    if(strlen(PlayerUSB.player[1].name)){
+        PlayerUSB.player[1].enabled = 1;
+    }
 
     // We'll set up any prep work for each player now.
     for(int i=0;i < 2; i++){
         if(PlayerUSB.player[i].enabled == 0){continue;}
         // Resolve Save Folder Path and Create if it Doesn't Exist
         sprintf(PlayerUSB.player[i].save_profile_folder_path,"${SAVE_ROOT_PATH}/%s",PlayerUSB.player[i].name);
-        piutools_resolve_path(PlayerUSB.player[i].save_profile_folder_path,PlayerUSB.player[i].save_profile_folder_path);
+        PIUTools_Path_Resolve(PlayerUSB.player[i].save_profile_folder_path,PlayerUSB.player[i].save_profile_folder_path);
         // Create The Save Folder Paths if They Don't Exist for Enabled Profiles.
         PIUTools_Filesystem_Create_Directory(PlayerUSB.player[i].save_profile_folder_path);
         // Create Block Device Path
-        sprintf(PlayerUSB.player[i].fake_block_device_path,"${SAVE_ROOT_PATH}/blockdev.%d",i);
-        piutools_resolve_path(PlayerUSB.player[i].fake_block_device_path,PlayerUSB.player[i].fake_block_device_path);
+        sprintf(PlayerUSB.player[i].fake_block_device_path,"${TMP_ROOT_PATH}/blockdev.%d",i);
+        PIUTools_Path_Resolve(PlayerUSB.player[i].fake_block_device_path,PlayerUSB.player[i].fake_block_device_path);
         PlayerUSB.player[i].usb_device = PIUTools_USB_Add_Device(USB_2_SPEED,USB_CLASS_MASS_STORAGE,USB_VID,USB_PID,PlayerUSB.player[i].serial,NULL,NULL,NULL);
 
 
@@ -319,21 +298,21 @@ const PHookEntry plugin_init(const char* config_path){
         // Set up SCSI Path/Block Stuff
         char lun_path[128] = {0x00};
         sprintf(lun_path,"/dev/scsi/host%d/bus0/target0/lun0/part1",i);
-        PIUTools_Filesystem_Add(lun_path,PlayerUSB.player[i].fake_block_device_path);                
+        PIUTools_Filesystem_AddRedirect(lun_path,PlayerUSB.player[i].fake_block_device_path);                
         write_scsi_blockdev_file(PlayerUSB.player[i].serial,PlayerUSB.player[i].fake_block_device_path,PlayerUSB.player[i].connected);
-        PIUTools_Filesystem_Add(PlayerUSB.player[i].scsi_path,PlayerUSB.player[i].fake_block_device_path);
+        PIUTools_Filesystem_AddRedirect(PlayerUSB.player[i].scsi_path,PlayerUSB.player[i].fake_block_device_path);
 
         // This Sets the Mount Entry in /proc/mounts
-        PIUTools_Filesystem_AddMountEntry(PlayerUSB.player[i].fake_dev_path,PlayerUSB.player[i].mount_path);
-        PIUTools_Filesystem_Add(PlayerUSB.player[i].fake_dev_path,PlayerUSB.player[i].fake_block_device_path);
+        PIUTools_Mount_AddEntry(PlayerUSB.player[i].fake_dev_path,PlayerUSB.player[i].mount_path);
+        PIUTools_Filesystem_AddRedirect(PlayerUSB.player[i].fake_dev_path,PlayerUSB.player[i].fake_block_device_path);
         // This redirects the /mnt/n to our save profile
-        PIUTools_Filesystem_Add(PlayerUSB.player[i].mount_path,PlayerUSB.player[i].save_profile_folder_path); 
+        PIUTools_Filesystem_AddRedirect(PlayerUSB.player[i].mount_path,PlayerUSB.player[i].save_profile_folder_path); 
         // This redirects /mnt/n/ to our save profile because wtf
         char mnt_slash[1024];
         char save_slash[1024];
         sprintf(mnt_slash,"%s/",PlayerUSB.player[i].mount_path);
         sprintf(save_slash,"%s/",PlayerUSB.player[i].save_profile_folder_path);
-        PIUTools_Filesystem_Add(mnt_slash,save_slash);        
+        PIUTools_Filesystem_AddRedirect(mnt_slash,save_slash);        
 
     }
     pthread_t button_check_thread;

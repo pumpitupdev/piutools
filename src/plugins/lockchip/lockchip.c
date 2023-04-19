@@ -9,9 +9,7 @@
 #include <sys/io.h>
 #include <sys/mman.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 #include "cat702.h"
 
@@ -54,7 +52,7 @@ void cat702_handler(int signum, siginfo_t *info, void* ctx){
 }
 
 unsigned char cat702_key[8] = {0x00};
-
+static char cat702_strkey[32] = {0x00};
 static unsigned char HexChar(char c) {
 	if ('0' <= c && c <= '9') return (unsigned char)(c - '0');
 	if ('A' <= c && c <= 'F') return (unsigned char)(c - 'A' + 10);
@@ -80,24 +78,16 @@ static int HexToBin(const char* s, unsigned char* buff, int length) {
 	return result;
 }
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if (strcmp(section, "LOCKCHIP") == 0) {
-        if (value == NULL) {
-            return 0;
-        }
+static HookConfigEntry plugin_config[] = {
+  CONFIG_ENTRY("LOCKCHIP","key",CONFIG_TYPE_STRING,cat702_strkey,sizeof(cat702_strkey)),
+  {}
+};
 
-        if (strcmp(name, "key") == 0) {
-            DBG_printf("[%s] Loaded CAT702 Key: %s", __FILE__, value);           
-            HexToBin(value,cat702_key,8);
-        }
-    }
-    return 1;
-}
 
-const PHookEntry plugin_init(const char* config_path){  
-    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
-    
- 
+const PHookEntry plugin_init(void) { 
+    PIUTools_Config_Read(plugin_config);
+    DBG_printf("[%s] Loaded CAT702 Key: %s", __FILE__, cat702_strkey);           
+    HexToBin(cat702_strkey,cat702_key,8); 
     CAT702_Initialize_Key(cat702_key);
     ioperm(IOPORT_CAT702_IN, 1, 0);
     ioperm(IOPORT_AT93C86_CAT702_OUT, 1, 0);

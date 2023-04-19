@@ -2,16 +2,18 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
-#include <plugin_sdk/PIUTools_USB.h>
-
+#include <sys/stat.h>
+#include <PIUTools_SDK.h>
 
 #include "ticket.h"
 
-#define FAKE_TICKET_FD 0x99884
-char fake_ticket_device_path[1024] = {0x00};
+#ifndef USBDEVFS_CONTROL
+#define USBDEVFS_CONTROL 0xc0185501
+#endif
+
+
+static char generated_ticket_device_path[1024] = {0x00};
+static char fake_ticket_device_path[1024] = {0x00};
 
 typedef int (*ioctl_func_t)(int fd, int request, void* data);
 static ioctl_func_t next_ioctl;
@@ -23,7 +25,7 @@ static int dispenser_enabled;
 static int starting_tickets = 100;
 
 static int ticket_ioctl(int fd, int request, void* data) {   
-    if(fd == FAKE_TICKET_FD){
+    if(request == USBDEVFS_CONTROL){
         parse_ticketcmd((unsigned char*)data);
         return 0;
     }
@@ -43,41 +45,33 @@ static int ticket_libusb(void *dev, int requesttype, int request, int value, int
     return 0;
 }
 
-int ticket_open(const char *pathname, int flags) {
-    // Ticket Endpoint Handling
-    if(strcmp(pathname,fake_ticket_device_path) == 0){
-        return FAKE_TICKET_FD;
-    }
-    return next_open(pathname, flags);
-}
-
-
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if(strcmp(section,"TICKET_DISPENSER") == 0){ 
-        if(value == NULL){return 0;}       
-
-        if(strcmp(name,"starting_tickets") == 0){
-            char *ptr;            
-            starting_tickets = strtoul(value,&ptr,10);
-        }
-    }
-    return 1;
-}
-
-
 static HookEntry entries[] = {
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","ioctl", ticket_ioctl, &next_ioctl, 1),    
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","open", ticket_open, &next_open, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","ioctl", ticket_ioctl, &next_ioctl, 1),    
     {}    
 };
 
-const PHookEntry plugin_init(const char* config_path){
-  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
-  init_ticket_state(starting_tickets);
-  // Make Fake USB Device for Tickets
-  PUSBDevice nd = PIUTools_USB_Add_Device(USB_2_SPEED,0,0x0d2f,0x1004,"TKT123",(void*)ticket_libusb,NULL,NULL);
-  PIUTools_USB_Connect_Device(nd->dev);
-  sprintf(fake_ticket_device_path,"/proc/bus/usb/%03d/%03d",nd->bus,nd->dev);
-  printf("[%s] Created Fake Ticket Device At: %s\n",__FILE__,fake_ticket_device_path);
-  return entries;
+static HookConfigEntry plugin_config[] = {
+  CONFIG_ENTRY("TICKET_DISPENSER","starting_tickets",CONFIG_TYPE_INT,&starting_tickets,sizeof(starting_tickets)),
+  {}
+};
+
+const PHookEntry plugin_init(void) {
+    PIUTools_Config_Read(plugin_config);
+    init_ticket_state(starting_tickets);
+
+    // Make Fake USB Device for Tickets
+    PUSBDevice nd = PIUTools_USB_Add_Device(USB_2_SPEED,0,0x0d2f,0x1004,"TKT123",(void*)ticket_libusb,NULL,NULL);
+    PIUTools_USB_Connect_Device(nd->dev);
+    sprintf(generated_ticket_device_path,"/proc/bus/usb/%03d/%03d",nd->bus,nd->dev);
+
+    PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_ticket_device",fake_ticket_device_path);
+    FILE* fp = fopen(fake_ticket_device_path,"wb");
+    fwrite("TKT",3,1,fp);
+    fclose(fp);
+    chmod(fake_ticket_device_path, 0666);
+
+    PIUTools_Filesystem_AddRedirect(generated_ticket_device_path,fake_ticket_device_path);
+
+    DBG_printf("[%s] Created Fake Ticket Device At: %s",__FILE__,fake_ticket_device_path);
+    return entries;
 }

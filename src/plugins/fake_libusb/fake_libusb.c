@@ -2,14 +2,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
-#include <plugin_sdk/PIUTools_USB.h>
 
-#include "usb_0.h"
+#include "legacy_usb.h"
 
-
+#include <PIUTools_SDK.h>
 
 #define FAKE_DT 0xFF
 
@@ -28,6 +24,7 @@ struct usb_dev_fake_handle {
   void *impl_info;
   PUSBDevice fake_device;
 };
+
 typedef struct usb_dev_fake_handle usb_dev_fakehandle;
 // --- libusb0.1 Hooks ---
 
@@ -155,7 +152,7 @@ usb_init_t next_usb_init;
 static int libusb_initialized = 0;
 int fake_usb_init(void){
     if(libusb_initialized){return 0;}
-    libusb_initialized=1;
+    //libusb_initialized=1;
     return next_usb_init();
 }
 
@@ -164,7 +161,7 @@ typedef usb_dev_handle * (*usb_open_ptr)(struct usb_device*);
 usb_open_ptr next_usb_open;
 
 usb_dev_handle * fake_usb_open(struct usb_device* dev){    
-    printf("Entering [%s]\n",__FUNCTION__); 
+    DBG_printf("Entering [%s]\n",__FUNCTION__); 
     if(dev->descriptor.bDescriptorType == FAKE_DT){
         usb_dev_fakehandle *udev;
         udev = malloc(sizeof(*udev));
@@ -182,7 +179,7 @@ usb_dev_handle * fake_usb_open(struct usb_device* dev){
             }
         }
         if(udev->fake_device == NULL){
-            printf("Warning - Unable to Find Fake Device VID/PID: %04X %04x\n",dev->descriptor.idVendor, dev->descriptor.idProduct);
+            DBG_printf("Warning - Unable to Find Fake Device VID/PID: %04X %04x",dev->descriptor.idVendor, dev->descriptor.idProduct);
             return next_usb_open(dev);
         }
         return (usb_dev_handle*)udev;
@@ -218,7 +215,7 @@ int fake_usb_find_busses(void){
 typedef int (*usb_find_devices_t)(void);
 usb_find_devices_t next_usb_find_devices;
 void populate_fake_usb_device_descriptor(unsigned short vid, unsigned short pid, char usb_rev, struct usb_device* fake_device){
-    printf("Entering [%s]\n",__FUNCTION__);
+    DBG_printf("Entering [%s]",__FUNCTION__);
     fake_device->descriptor.bLength = sizeof(struct usb_device_descriptor);
     fake_device->descriptor.bDescriptorType = FAKE_DT;
     int spdval = 0;
@@ -275,7 +272,7 @@ void populate_fake_usb_device_descriptor(unsigned short vid, unsigned short pid,
 // dev->config->interface->altsetting->bInterfaceNumber
 
 int fake_usb_find_devices(void){
-    printf("Entering [%s]\n",__FUNCTION__);
+    DBG_printf("Entering [%s]",__FUNCTION__);
     // First - Call the real find devices.
     int num_real_devices = next_usb_find_devices();
 
@@ -285,7 +282,7 @@ int fake_usb_find_devices(void){
         if(strcmp(fake_bus->dirname,FAKE_USB_BUS_STR) == 0){break;}
     }
     if(fake_bus == NULL){
-        printf("[%s] Error: Couldn't Find Fake BUS\n");
+        DBG_printf("[%s] Error: Couldn't Find Fake BUS");
         return num_real_devices;
     }
 
@@ -309,7 +306,7 @@ int fake_usb_find_devices(void){
     if(num_fake_devices > 0 && num_real_devices < 0){
         num_real_devices = 0;
     }
-    printf("USB Find Devices Result: %d Real Devices, %d Fake Devices\n",num_real_devices,num_fake_devices);
+    DBG_printf("USB Find Devices Result: %d Real Devices, %d Fake Devices",num_real_devices,num_fake_devices);
     return num_real_devices+num_fake_devices;
 }
 
@@ -335,7 +332,7 @@ static HookEntry entries[] = {
     {}    
 };
 
-const PHookEntry plugin_init(const char* config_path){
-    printf("[%s] Starting Fake libusb0...\n", __FILE__);
-  return entries;
+const PHookEntry plugin_init(void){
+    DBG_printf("[%s] Starting Fake libusb0...", __FILE__);
+    return entries;
 }

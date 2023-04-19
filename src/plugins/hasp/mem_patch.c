@@ -2,9 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 #include "patch.h"
 #include "mem_patch.h"
@@ -47,26 +45,26 @@ void patch_hasp_init(const uint8_t *key_data, size_t len, char* str_fids){
       16);
 
   if (!func_api_login) {
-    printf("Could not find ApiLogin address");
+    DBG_printf("Could not find ApiLogin address");
     return;
   }
 
-  printf("ApiLogin at %p\n", func_api_login);
+  DBG_printf("ApiLogin at %p\n", func_api_login);
 
   func_api_logout = (void *) (((size_t) func_api_login) - 0x130);
-  printf("assuming ApiLogout at %p\n", func_api_logout);
+  DBG_printf("assuming ApiLogout at %p\n", func_api_logout);
 
   func_api_decrypt = (void *) (((size_t) func_api_login) - 0x200);
-  printf("assuming ApiDecrypt at %p\n", func_api_decrypt);
+  DBG_printf("assuming ApiDecrypt at %p\n", func_api_decrypt);
 
   func_api_getinfo = (void *) (((size_t) func_api_login) - 0x15F0);
 
   if (!func_api_getinfo) {
-    printf("Could not find ApiGetinfo address");
+    DBG_printf("Could not find ApiGetinfo address");
     return;
   }
 
-  printf("ApiGetid at %p\n", func_api_getinfo);
+  DBG_printf("ApiGetid at %p\n", func_api_getinfo);
 
   util_patch_function((uintptr_t) func_api_login, sec_hasp_api_login);
   util_patch_function((uintptr_t) func_api_logout, sec_hasp_api_logout);
@@ -74,42 +72,33 @@ void patch_hasp_init(const uint8_t *key_data, size_t len, char* str_fids){
   util_patch_function((uintptr_t) func_api_getinfo, sec_hasp_get_info);
 
   sec_hasp_init(key_data, len,str_fids);
-
-
-  //printf("Initialized");
 }
 
 static char dongle_file_path[1024] = {0x00};
 static char hasp_fids[128] = {0x00};
-static int region_featureid = 0;
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    
-    if(strcmp(section,"HASP") == 0){
-        if(strcmp(name,"file") == 0){
-            if(value == NULL){return 0;}
-            piutools_resolve_path(value,dongle_file_path);    
-            DBG_printf("[%s] HASP Dongle File Loaded: %s",__FILE__,dongle_file_path);        
-        }
-        if(strcmp(name,"feature_ids") == 0){
-            if(value == NULL){return 0;}
-            strncpy(hasp_fids,value,sizeof(hasp_fids));
-            DBG_printf("[%s] HASP Dongle File Loaded: %s",__FILE__,dongle_file_path);        
-        }
-        
-    }
-    return 1;
-}
 
-const PHookEntry plugin_init(const char* config_path){
-  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
-    FILE* fp = fopen(dongle_file_path,"rb");
-    fseek(fp,0,SEEK_END);
-    size_t hasp_file_size = ftell(fp);
-    rewind(fp);
-    unsigned char* hasp_data = malloc(hasp_file_size);
-    fread(hasp_data,hasp_file_size,1,fp);
-    fclose(fp);
-    patch_hasp_init(hasp_data,hasp_file_size,hasp_fids);
+static HookConfigEntry plugin_config[] = {
+  CONFIG_ENTRY("HASP","feature_ids",CONFIG_TYPE_STRING,hasp_fids,sizeof(hasp_fids)),
+  {}
+};
+
+const PHookEntry plugin_init(void){
+  PIUTools_Config_Read(plugin_config);
+  PIUTools_Path_Resolve("${GAME_ROM_PATH}/hasp.dongle",dongle_file_path);
+
+  // Read the HASP Dongle File   
+  FILE* fp = fopen(dongle_file_path,"rb");
+  if(fp == NULL){return NULL;}
+  fseek(fp,0,SEEK_END);
+  size_t hasp_file_size = ftell(fp);
+  rewind(fp);
+  unsigned char* hasp_data = malloc(hasp_file_size);
+  fread(hasp_data,hasp_file_size,1,fp);
+  fclose(fp);
+
+  // Initialize The Emulator
+  DBG_printf("[%s] HASP Dongle File Loaded: %s FIDS: %s",__FILE__,dongle_file_path,hasp_fids);      
+  patch_hasp_init(hasp_data,hasp_file_size,hasp_fids);
 
   return NULL;
 }

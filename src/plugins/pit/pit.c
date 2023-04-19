@@ -7,9 +7,7 @@
 #include <sys/io.h>
 #include <sys/mman.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 
 #define IOPORT_SIGDRIVER_OUT 0x80
@@ -48,7 +46,7 @@ static void pit_patch(int signum, siginfo_t *info, void* ctx){
   }
 }
 
-const PHookEntry plugin_init(const char* config_path){  
+const PHookEntry plugin_init(void){  
     DBG_printf("[%s] IO PIT Patch Enabled",__FILE__);   
     ioperm(0x80,1, 0);
     struct sigaction action;

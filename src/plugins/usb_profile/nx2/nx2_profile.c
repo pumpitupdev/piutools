@@ -1,17 +1,22 @@
+#define _LARGEFILE64_SOURCE
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "nx2_save.h"
 #include "nx2_rank.h"
 
-#include <plugin_sdk/PIUTools_Filesystem.h>
-
+static int Path_Exists(const char* path){
+     struct stat st;
+     return stat(path, &st) != -1;
+}
 void USB_Profile_Generate_NX2(const char* profile_path, const char* player_name, const char* usb_serial, int avatar_id){
     char nx2_rank_file_path[1024] = {0x00};
     char nx2_save_file_path[1024] = {0x00};
     sprintf(nx2_save_file_path,"%s/nx2save.bin",profile_path);
     sprintf(nx2_rank_file_path,"%s/nx2rank.bin",profile_path);
-    if(!PIUTools_Filesystem_Path_Exist(nx2_save_file_path)){
+    if(!Path_Exists(nx2_save_file_path)){
         struct asset_nx2_usb_save * save_file = asset_nx2_usb_save_new();
         memset(save_file->review.player_id,0,sizeof(save_file->review.player_id));
         memset(save_file->stats.player_id,0,sizeof(save_file->stats.player_id));
@@ -26,7 +31,7 @@ void USB_Profile_Generate_NX2(const char* profile_path, const char* player_name,
         fwrite(save_file,sizeof(struct asset_nx2_usb_save),1,fp);
         fclose(fp);
     }
-    if(!PIUTools_Filesystem_Path_Exist(nx2_rank_file_path)){
+    if(!Path_Exists(nx2_rank_file_path)){
         struct asset_nx2_usb_rank * rank_file = asset_nx2_usb_rank_new();
         asset_nx2_usb_rank_finalize(rank_file);
         struct asset_nx2_usb_rank rank_enc;

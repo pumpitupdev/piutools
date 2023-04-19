@@ -9,7 +9,7 @@
 
 #include "plthook.h"
 
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 static char old_cpp_lib_path[1024];
 static void* old_cpp_lib_handle;
@@ -24,9 +24,9 @@ int get_function_byname(void* hLibrary, const char* function_name, void** pfunct
     return 1;
 }
 
-const PHookEntry plugin_init(const char* config_path){
+const PHookEntry plugin_init(void){
     // Resolve path to old cpp library.
-    piutools_resolve_path("${GAME_ROM_PATH}/libs/libstdc++.so.6.0.13",old_cpp_lib_path);
+    PIUTools_Path_Resolve("${PIUTOOLS_ROOT_PATH}/plugin_deps/libstdc++.so.6.0.13",old_cpp_lib_path);
     // Get Handle - If we can't do this, the plugin won't work.
     old_cpp_lib_handle = dlopen(old_cpp_lib_path,RTLD_NOW);
     if(old_cpp_lib_handle == NULL){

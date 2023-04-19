@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <plugin_sdk/PIUTools_Input.h>
+#include <PIUTools_SDK.h>
 #include "apug0pcb007.h"
 
 #define SET_IO_STATE(state, byte, offset, val) ((state) ? (byte[offset] |= val) : (byte[offset] &= ~val))

@@ -10,9 +10,7 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 #include "am030614.h"
 
@@ -77,17 +75,7 @@ void hex_string_to_8_byte_array(const char *hex_string, unsigned char *byte_arra
     }
 }
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    if (strcmp(section, "IO_AM030614") == 0) {
-        if (value == NULL) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-const PHookEntry plugin_init(const char* config_path){  
-    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+const PHookEntry plugin_init(){  
     PIUIO_Init();
     ioperm(IOPORT_PIUIO_P1_OUT, 1, 0);
     ioperm(IOPORT_PIUIO_P2_OUT, 1, 0);

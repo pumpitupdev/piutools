@@ -17,10 +17,7 @@ motherboard_product=G41C-GS
 #include <sys/sysinfo.h>
 #include <GL/gl.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
-#include <plugin_sdk/PIUTools_Filesystem.h>
+#include <PIUTools_SDK.h>
 
 #include "fake_smbios.h"
 
@@ -40,19 +37,9 @@ static char fake_systab_path[1024];
 
 typedef int (*sysinfo_t)(struct sysinfo *info);
 sysinfo_t next_sysinfo;
-typedef int (*open_func_t)(const char *, int);
-open_func_t next_open;
 typedef const GLubyte *(*glGetString_func)(GLenum name);
 glGetString_func next_glGetString;
 
-// Redirection of /dev/mem in the game binary (yes I know)
-// This points at our fake smbios block data now.
-int redirect_dev_mem_open(const char *pathname, int flags) {
-    if(strcmp(pathname,"/dev/mem") == 0){
-        return next_open(fake_dev_mem_path,flags);
-    }
-    return next_open(pathname,flags);
-}
 
 // Capture sysinfo and modify the amount of reported available RAM.
 // The game displays this information in KB,  info.totalram / (1024 * info.mem_unit);
@@ -79,48 +66,26 @@ const GLubyte *fake_glGetString(GLenum name) {
 
 // We only need a few hooks here.
 static HookEntry entries[] = {
-    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6","open", redirect_dev_mem_open, &next_open, 1),
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "sysinfo", fake_sysinfo, &next_sysinfo, 1),
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glGetString", fake_glGetString, &next_glGetString, 1), 
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glGetString", fake_glGetString, &next_glGetString, 1), 
     {}
 };
 
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    char* ptr;
-    if (strcmp(section, "SYSTEM_INFO") == 0) {
-        if (value == NULL) {
-            return 0;
-        }
 
-        if(strcmp(name,"ram_mb") == 0){
-            ram_mb = strtoul(value,&ptr,10);
-        }
-        if(strcmp(name,"cpu_mhz") == 0){
-            cpu_mhz = strtoul(value,&ptr,10);
-        }
-        if(strncmp(name,"cpu_name",128) == 0){
-            strcpy(cpuinfo,value);
-        } 
 
-        if(strncmp(name,"motherboard_vendor",128) == 0){
-            strcpy(motherboard_vendor,value);
-        } 
+ static HookConfigEntry plugin_config[] = {
+    CONFIG_ENTRY("SYSTEM_INFO","motherboard_vendor",CONFIG_TYPE_STRING,motherboard_vendor,sizeof(motherboard_vendor)),
+    CONFIG_ENTRY("SYSTEM_INFO","motherboard_product",CONFIG_TYPE_STRING,motherboard_product,sizeof(motherboard_product)),  
+    CONFIG_ENTRY("SYSTEM_INFO","cpu_name",CONFIG_TYPE_STRING,cpuinfo,sizeof(cpuinfo)),
+    CONFIG_ENTRY("SYSTEM_INFO","cpu_mhz",CONFIG_TYPE_INT,&cpu_mhz,sizeof(cpu_mhz)),
+    CONFIG_ENTRY("SYSTEM_INFO","gpu_name",CONFIG_TYPE_STRING,gpu_name,sizeof(gpu_name)),      
+    CONFIG_ENTRY("SYSTEM_INFO","ram_mb",CONFIG_TYPE_INT,&ram_mb,sizeof(ram_mb)),
+  {}
+};
 
-        if(strncmp(name,"motherboard_product",128) == 0){
-            strcpy(motherboard_product,value);
-        } 
-        if(strcmp(name,"gpu_name") == 0){
-            strcpy(gpu_name,value);
-        }       
-    }
-    return 1;
-}
-
- 
-const PHookEntry plugin_init(const char* config_path){
-    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
-
+const PHookEntry plugin_init(void){
+    PIUTools_Config_Read(plugin_config);
     // Set some Defaults
     if(strlen(motherboard_vendor) < 1){
         strcpy(motherboard_vendor,"PIUTools");
@@ -139,45 +104,40 @@ const PHookEntry plugin_init(const char* config_path){
     }    
 
     // Create Save Path for fake /dev/mem
-    sprintf(fake_dev_mem_path,"${SAVE_ROOT_PATH}/%s","fake_smbios_table");
-    piutools_resolve_path(fake_dev_mem_path,fake_dev_mem_path);
+    PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_smbios_table",fake_dev_mem_path);
     generate_fake_smbios(motherboard_vendor,motherboard_product,cpuinfo,cpu_mhz,fake_dev_mem_path);
-    
+    PIUTools_Filesystem_AddRedirect("/dev/mem",fake_dev_mem_path);
+
     // Create a Fake Systab 
-    sprintf(fake_systab_path,"${SAVE_ROOT_PATH}/%s","fake_systab");
-    piutools_resolve_path(fake_systab_path,fake_systab_path);
+    PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_systab",fake_systab_path);
     FILE* fp = fopen(fake_systab_path,"wb");
     const char* systab_line = "SMBIOS=0x00000000\n";
     fwrite(systab_line,strlen(systab_line),1,fp);
     fclose(fp);
 
     // Redirect systab 
-    PIUTools_Filesystem_Add("/proc/efi/systab",fake_systab_path);    
-    PIUTools_Filesystem_Add("/sys/firmware/efi/systab",fake_systab_path);  
+    PIUTools_Filesystem_AddRedirect("/proc/efi/systab",fake_systab_path);    
+    PIUTools_Filesystem_AddRedirect("/sys/firmware/efi/systab",fake_systab_path);  
 
     // Create a Fake cpuinfo file
-    sprintf(fake_cpuinfo_path,"${SAVE_ROOT_PATH}/%s","fake_cpuinfo");
-    piutools_resolve_path(fake_cpuinfo_path,fake_cpuinfo_path);
+    PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_cpuinfo",fake_cpuinfo_path);
     fp = fopen(fake_cpuinfo_path,"wb");
     fwrite(cpuinfo,strlen(cpuinfo),1,fp);
     fclose(fp);
-    PIUTools_Filesystem_Add("/proc/cpuinfo",fake_cpuinfo_path);   
+    PIUTools_Filesystem_AddRedirect("/proc/cpuinfo",fake_cpuinfo_path);   
 
     // Create a Fake Board Vendor File
-    sprintf(fake_board_vendor_path,"${SAVE_ROOT_PATH}/%s","fake_board_vendor");
-    piutools_resolve_path(fake_board_vendor_path,fake_board_vendor_path);
+    PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_board_vendor",fake_board_vendor_path);
     fp = fopen(fake_board_vendor_path,"wb");
     fwrite(motherboard_vendor,strlen(motherboard_vendor),1,fp);
     fclose(fp);
-    PIUTools_Filesystem_Add("/sys/class/dmi/id/board_vendor",fake_board_vendor_path); 
+    PIUTools_Filesystem_AddRedirect("/sys/class/dmi/id/board_vendor",fake_board_vendor_path); 
 
     // Create a Fake Board Product File
-    sprintf(fake_board_name_path,"${SAVE_ROOT_PATH}/%s","fake_board_name");
-    piutools_resolve_path(fake_board_name_path,fake_board_name_path);
+    PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_board_name",fake_board_name_path);
     fp = fopen(fake_board_name_path,"wb");
     fwrite(motherboard_product,strlen(motherboard_product),1,fp);
     fclose(fp);
-    PIUTools_Filesystem_Add("/sys/class/dmi/id/board_name",fake_board_name_path); 
-
+    PIUTools_Filesystem_AddRedirect("/sys/class/dmi/id/board_name",fake_board_name_path); 
     return entries;
 }

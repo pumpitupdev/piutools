@@ -1,8 +1,0 @@
-T:  Bus=99 Lev= 0 Prnt= 0 Port= 2 Cnt= 0 Dev#=  2 Spd=12  MxCh= 6
-P:  Vendor=0547 ProdID=1002
-S:  SerialNumber=MK6IO
-
-T:  Bus=99 Lev= 0 Prnt= 0 Port= 3 Cnt= 0 Dev#=  3 Spd=480  MxCh= 6
-P:  Vendor=0d2f ProdID=1004
-S:  SerialNumber=TKT123
-

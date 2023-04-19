@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include <plugin_sdk/ini.h>
+#include "ini.h"
 #include "utils.h"
 #include "emulator_config.h"
 
@@ -74,7 +74,7 @@ void print_info(){
 
 void load_config(const char* path_to_dongle_file){
     if(!path_to_dongle_file){
-        path_to_dongle_file = "./io.microdog.ini";
+        path_to_dongle_file = "./microdog.dongle";
     }
     memset(&emu_dog,0x00,sizeof(struct _EMULATED_DOG));
     // Pass 1 - Get INFO

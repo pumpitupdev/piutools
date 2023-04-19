@@ -27,3 +27,4 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN mkdir /piutools
 WORKDIR /piutools
 
+# docker build -t piutools_buildenv . 

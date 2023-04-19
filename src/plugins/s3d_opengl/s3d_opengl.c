@@ -20,9 +20,7 @@
 // For Frame Limiter
 #include <time.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 
 typedef Window (*XCreateWindow_t)(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual*, unsigned long, XSetWindowAttributes*);
@@ -46,14 +44,14 @@ enum GFX_S3D_SCALING_MODES{
 };
 
 typedef struct _GFX_S3D_OPTIONS{
-      unsigned char scaling_mode;
-      unsigned short frame_limit;
-      unsigned char resizable_window;
-      unsigned char colormap_fix;
-      unsigned short screen_width;
-      unsigned short screen_height;
-      unsigned long gl_threadfix;
-      unsigned char texture_seam_fix;
+      unsigned int scaling_mode;
+      unsigned int frame_limit;
+      unsigned int resizable_window;
+      unsigned int colormap_fix;
+      unsigned int screen_width;
+      unsigned int screen_height;
+      unsigned int gl_threadfix;
+      unsigned int texture_seam_fix;
 }PatchGfxS3DOptions,*PPatchGfxS3DOptions;
 
 PatchGfxS3DOptions options_gfx_s3d = {
@@ -192,12 +190,10 @@ void *handle_window_events(void *arg) {
     XEvent event;
 
     while (1) {
-        XNextEvent(dpy, &event);
-
-        if (event.type == ConfigureNotify) {
-            XConfigureEvent xce = event.xconfigure;
-
-            // Check if the window size changed.
+      while (XCheckMaskEvent(dpy, StructureNotifyMask, &event)) {
+         if (event.type == ConfigureNotify) {
+          XConfigureEvent xce = event.xconfigure;
+           // Check if the window size changed.
             if (xce.width != target_display_width || xce.height != target_display_height) {
                 target_display_width = xce.width;
                 target_display_height = xce.height;
@@ -207,9 +203,10 @@ void *handle_window_events(void *arg) {
                 calculate_zoom_factors(initial_display_width,initial_display_height,target_display_width,target_display_height,&zoom_factor_x,&zoom_factor_y);
                 // Update your zoom level or perform other actions based on the new dimensions.
                 
-            }                            
-            }
-        }
+            }    
+    }
+    }
+    }      
     return NULL;
 }
 
@@ -259,12 +256,16 @@ static Window s3d_XCreateWindow(Display *display,Window parent,int x,int y,unsig
     glx_oml_swap_supported = is_extension_supported(extensions,"GLX_OML_swap_method");
     printf("[%s] Swap Control Support: SGI:%d MESA:%d EXT:%d OML:%d\n",__FILE__,glx_sgi_swap_supported,glx_mesa_swap_supported,glx_ext_swap_supported,glx_oml_swap_supported);
 
+    // Create a new thread to handle window events
+   // pthread_t thread;
+   // pthread_create(&thread, NULL, handle_window_events, display);
     return res;
 }
 
 
 
 Display* s3d_XOpenDisplay(char *display_name){
+  //XInitThreads();
   Display* dpy = next_XOpenDisplay(display_name);
   if(options_gfx_s3d.screen_height == 0){
     return dpy;
@@ -340,7 +341,7 @@ static void s3d_glXSwapBuffers(Display *dpy, GLXDrawable drawable){
     }
 
     if (options_gfx_s3d.scaling_mode) {
-        S3DResizeEx();
+       S3DResizeEx();
     }
 
     next_glxSwapBuffers(dpy, drawable);
@@ -410,51 +411,26 @@ static HookEntry entries[] = {
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XCreateWindow", s3d_XCreateWindow, &next_XCreateWindow, 1),
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glDrawPixels", s3d_glDrawPixels, &next_glDrawPixels, 1),
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapBuffers", s3d_glXSwapBuffers, &next_glxSwapBuffers, 1),
-    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glTexImage2D", s3d_glTexImage2D, &next_glTexImage2D, 0),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libGL.so.1","glXSwapIntervalSGI", s3d_glXSwapIntervalSGI, &next_glXSwapIntervalSGI, 1),      
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libX11.so.6","XOpenDisplay", s3d_XOpenDisplay, &next_XOpenDisplay, 1),    
     {}       
 };
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){
-    char *ptr;  
-    if(strcmp(section,"S3D_OPENGL") == 0){
-        if(strcmp(name,"frame_limit") == 0){
-            if(value != NULL){options_gfx_s3d.frame_limit = strtoul(value,&ptr,10);}
-        }
-        if(strcmp(name,"resizable_window") == 0){
-            if(value != NULL){options_gfx_s3d.resizable_window = strtoul(value,&ptr,10);}
-        }   
-        if(strcmp(name,"colormap_fix") == 0){
-            if(value != NULL){options_gfx_s3d.colormap_fix = strtoul(value,&ptr,10);}
-        }  
-        if(strcmp(name,"screen_width") == 0){
-            if(value != NULL){options_gfx_s3d.screen_width = strtoul(value,&ptr,10);}
-        }         
-        if(strcmp(name,"screen_height") == 0){
-            if(value != NULL){options_gfx_s3d.screen_height = strtoul(value,&ptr,10);}
-        }    
-        if(strcmp(name,"scaling_mode") == 0){
-            if(value != NULL){options_gfx_s3d.scaling_mode = strtoul(value,&ptr,10);}
-        }  
-        if(strcmp(name,"texture_seam_fix") == 0){
-            if(value != NULL){entries[3].hook_enabled = strtoul(value,&ptr,10);}
-        }                  
-        if(strcmp(name,"gl_single_threadfix") == 0){
-            if(value != NULL){
-              options_gfx_s3d.gl_threadfix = strtoul(value,&ptr,10);
-              if(options_gfx_s3d.gl_threadfix == 1){
-                setenv("__GL_SINGLETHREADED","1",1);
-              }
-            }
-        } 
-                            
-    }
-    return 1;
-}
+static HookConfigEntry plugin_config[] = {
+  CONFIG_ENTRY("S3D_OPENGL","frame_limit",CONFIG_TYPE_INT,&options_gfx_s3d.frame_limit ,sizeof(options_gfx_s3d.frame_limit)),
+  CONFIG_ENTRY("S3D_OPENGL","resizable_window",CONFIG_TYPE_BOOL, &options_gfx_s3d.resizable_window,sizeof(options_gfx_s3d.resizable_window)),
+  CONFIG_ENTRY("S3D_OPENGL","colormap_fix",CONFIG_TYPE_BOOL, &options_gfx_s3d.colormap_fix,sizeof(options_gfx_s3d.colormap_fix)),
+  CONFIG_ENTRY("S3D_OPENGL","screen_width",CONFIG_TYPE_INT, &options_gfx_s3d.screen_width,sizeof(options_gfx_s3d.screen_width)),
+  CONFIG_ENTRY("S3D_OPENGL","screen_height",CONFIG_TYPE_INT, &options_gfx_s3d.screen_height,sizeof(options_gfx_s3d.screen_height)),
+  CONFIG_ENTRY("S3D_OPENGL","scaling_mode",CONFIG_TYPE_INT, &options_gfx_s3d.scaling_mode,sizeof(options_gfx_s3d.scaling_mode)),
+  CONFIG_ENTRY("S3D_OPENGL","texture_seam_fix",CONFIG_TYPE_BOOL, &options_gfx_s3d.texture_seam_fix,sizeof(options_gfx_s3d.texture_seam_fix)),
+  CONFIG_ENTRY("S3D_OPENGL","gl_single_threadfix",CONFIG_TYPE_BOOL, &options_gfx_s3d.gl_threadfix,sizeof(options_gfx_s3d.gl_threadfix)),
+  {}
+};
 
-const PHookEntry plugin_init(const char* config_path){
-  if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+const PHookEntry plugin_init(void) {
+  PIUTools_Config_Read(plugin_config);
 
   if(options_gfx_s3d.colormap_fix){
     DBG_printf("[%s] GFX ColorMap Fix Enabled: %d",__FILE__,options_gfx_s3d.colormap_fix);
@@ -476,11 +452,13 @@ const PHookEntry plugin_init(const char* config_path){
   }
   
   if(options_gfx_s3d.gl_threadfix == 1){
-      DBG_printf("[%s] Enabled Single Threaded OpenGL Fix",__FILE__);      
+      DBG_printf("[%s] Enabled Single Threaded OpenGL Fix",__FILE__);    
+      setenv("__GL_SINGLETHREADED","1",1);  
   }
 
   if(options_gfx_s3d.texture_seam_fix == 1){
-      DBG_printf("[%s] Texture Seam Clamp Fix",__FILE__);      
+      DBG_printf("[%s] Texture Seam Clamp Fix",__FILE__);     
+      entries[3].hook_enabled=1; 
   }      
   return entries;
 }

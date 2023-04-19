@@ -4,9 +4,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
+#include <PIUTools_SDK.h>
 
 typedef int (*fork_t)(void);
 fork_t next_fork;
@@ -26,36 +24,36 @@ original_execl_t next_execl;
 
 int block_spawnvp(int mode, const char *path, char *const argv[]){
     int res = 0;//next_spawnvp(mode,path,argv);
-    printf("[%s] Block spawnvp for %s: %d\n",__FILE__,path,res);
+    DBG_printf("[%s] Block spawnvp for %s: %d",__FILE__,path,res);
     return res;
 }
 int block_execv(const char* file, char* const argv[]){
     int res = 0;//next_execvp(file,argv);
-    printf("[%s] Block execv for %s: %d\n",__FILE__,file,res);
+    DBG_printf("[%s] Block execv for %s: %d",__FILE__,file,res);
     return res;
 }
 
 int block_execvp(const char* file, char* const argv[]){
     int res = 0;//next_execvp(file,argv);
-    printf("[%s] Block execvp for %s: %d\n",__FILE__,file,res);
+    DBG_printf("[%s] Block execvp for %s: %d",__FILE__,file,res);
     return res;
 }
 
 int block_system(const char* command){
     int res = 0;//next_system(command);
-    printf("[%s] Block System: %s: %d\n",__FILE__,command,res);
+    DBG_printf("[%s] Block System: %s: %d",__FILE__,command,res);
     return res;
 }
 
 int block_execl(const char *path, const char *arg, ...) {
     // You can add custom logic here if needed
-    printf("[%s] Block\n",__FUNCTION__);
+    DBG_printf("[%s] Blocked\n",__FUNCTION__);
     // Always return 0
     return 0;
 }
 
-
 int block_fork(void){
+    DBG_printf("[%s] Blocked\n",__FUNCTION__);
     return -1;
 }
 
@@ -69,6 +67,6 @@ static HookEntry entries[] = {
     {}
 };
 
-const PHookEntry plugin_init(const char* config_path){
+const PHookEntry plugin_init(){
   return entries;
 }

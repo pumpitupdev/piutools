@@ -1,4 +1,7 @@
 
+#define _LARGEFILE64_SOURCE
+#include <sys/types.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,9 +11,10 @@
 
 #include "prime_profile.h"
 
-#include <plugin_sdk/PIUTools_Filesystem.h>
-
-
+static int Path_Exists(const char* path){
+     struct stat st;
+     return stat(path, &st) != -1;
+}
 void generate_random_bytes(unsigned char *buf, size_t len) {
     // Seed the random number generator with the current time
     srand(time(NULL));

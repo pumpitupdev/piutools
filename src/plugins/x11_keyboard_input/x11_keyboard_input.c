@@ -16,10 +16,7 @@
 #include <X11/Xatom.h>
 #include <X11/keysym.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
-#include <plugin_sdk/PIUTools_Input.h>
+#include <PIUTools_SDK.h>
 
 
 int (*next_XGrabKeyboard)(Display *display, Window grab_window, Bool owner_events, int pointer_mode, int keyboard_mode, Time time);
@@ -80,36 +77,44 @@ int x11ki_XNextEvent(Display *display, XEvent *event){
                 // Player 1 - Pad
                 case XK_q:
                     PIUTools_IO_IN[PINPUT_P1_PAD_UL] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P1_BB_BACK] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 case XK_e:
                     PIUTools_IO_IN[PINPUT_P1_PAD_UR] = (event->type == KeyPress) ? 1 : 0;
                     break;                    
                 case XK_s:
                     PIUTools_IO_IN[PINPUT_P1_PAD_CENTER] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P1_BB_START] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 case XK_z:
                     PIUTools_IO_IN[PINPUT_P1_PAD_DL] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P1_BB_LEFT] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 case XK_c:
                     PIUTools_IO_IN[PINPUT_P1_PAD_DR] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P1_BB_RIGHT] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 // Player 1 - ButtonBoard TODO
 
                 // Player 2 - Pad
                 case XK_r:
                     PIUTools_IO_IN[PINPUT_P2_PAD_UL] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P2_BB_BACK] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 case XK_y:
                     PIUTools_IO_IN[PINPUT_P2_PAD_UR] = (event->type == KeyPress) ? 1 : 0;
                     break;                    
                 case XK_g:
                     PIUTools_IO_IN[PINPUT_P2_PAD_CENTER] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P2_BB_START] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 case XK_v:
                     PIUTools_IO_IN[PINPUT_P2_PAD_DL] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P2_BB_LEFT] = (event->type == KeyPress) ? 1 : 0;
                     break;
                 case XK_n:
                     PIUTools_IO_IN[PINPUT_P2_PAD_DR] = (event->type == KeyPress) ? 1 : 0;
+                    PIUTools_IO_IN[PINPUT_P2_BB_RIGHT] = (event->type == KeyPress) ? 1 : 0;
                     break;    
 
                 // Player 2 - ButtonBoard TODO
@@ -129,6 +134,6 @@ static HookEntry entries[] = {
     {}
 };
 
-const PHookEntry plugin_init(const char* config_path){    
+const PHookEntry plugin_init(void){    
     return entries;
 }

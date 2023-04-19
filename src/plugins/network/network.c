@@ -9,10 +9,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include <plugin_sdk/ini.h>
-#include <plugin_sdk/dbg.h>
-#include <plugin_sdk/plugin.h>
-#include <plugin_sdk/PIUTools_Filesystem.h>
+#include <PIUTools_SDK.h>
 
 
 typedef int (*connect_func)(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
@@ -34,10 +31,11 @@ static int block_connect(int sockfd, const struct sockaddr *addr, socklen_t addr
         return -1;
     }
     inet_ntop(addr->sa_family, src, ipstr, sizeof(ipstr));
-    //printf("Connecting to IP address: %s\n", ipstr);
-    if(!strcmp(ipstr,"115.68.108.183")){
-        return -1;
-    }
+    //printf("Connect: IP: %s\n",ipstr);
+    printf("Connecting to IP address: %s\n", ipstr);
+    //if(!strcmp(ipstr,"115.68.108.183")){
+    //    return -1;
+   // }
     
     // call the original connect function
     return next_connect(sockfd, addr, addrlen);
@@ -65,15 +63,8 @@ static HookEntry entries[] = {
 };
 
 
-static int parse_config(void* user, const char* section, const char* name, const char* value){    
-    if(strcmp(section,"NETWORK") == 0){
-        if(value == NULL){return 1;}     
-    }
-    return 1;
-}
 
-const PHookEntry plugin_init(const char* config_path){
-    if(ini_parse(config_path,parse_config,NULL) != 0){return NULL;}
+const PHookEntry plugin_init(void){
     return entries;
 }
 

@@ -7,18 +7,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
-#include "plugin_sdk/plugin.h"
-#include "plugin_sdk/dbg.h"
+
 #include "ds1963s-device.h"
 #include "ds2480b-device.h"
 #include "transport-factory.h"
 #include "transport-pty.h"
 
-#define DEFAULT_SERIAL_DEVICE "/dev/ttyS0"
+#include <PIUTools_SDK.h>
 
-/* file ops */
-typedef int (*open_func_t)(const char *, int);
-open_func_t next_open;
+#define DEFAULT_SERIAL_DEVICE "/dev/ttyS0"
 
 /*
 typedef int (*close_func_t)(int);
@@ -59,22 +56,7 @@ void *one_wire_loop() {
     return NULL;
 }
 
-int ds1963s_open(const char *path, int flags) {
-    /* intercept the open() call for the serial device file and open our
-     * emulated one instead */
-    if (strcmp(path, DEFAULT_SERIAL_DEVICE) == 0) {
-        DBG_printf("%s: intercepting open() to %s\n", __FUNCTION__, path);
-        return next_open(pathname, flags);
-    }
-    return next_open(path, flags);
-}
-
-static HookEntry entries[] = {
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "open", ds1963s_open, &next_open, 1),
-    {}    
-};
-
-const PHookEntry plugin_init(const char* config_path){
+const PHookEntry plugin_init(void){
     one_wire_bus_init(&bus);
     ds1963s_dev_init(&ds1963s);
     ds2480b_dev_init(&ds2480b);
@@ -88,6 +70,7 @@ const PHookEntry plugin_init(const char* config_path){
         struct transport_pty_data *pdata;
         pdata = (struct transport_pty_data *)serial->private_data;
         pathname = pdata->pathname_slave;
+        PIUTools_Filesystem_AddRedirect(DEFAULT_SERIAL_DEVICE,pathname);
         DBG_printf("[%s] Fake ds1963s ready at %s\n", __FILE__, pathname);
     }
 
@@ -103,5 +86,5 @@ const PHookEntry plugin_init(const char* config_path){
         return NULL;
     }
 
-    return entries;
+    return NULL;
 }
