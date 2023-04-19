@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <limits.h>
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 static int module_initialized = 0;
 
@@ -54,49 +58,66 @@ static void init_paths(void){
     }    
 }
 
-
+/* normalizes redundant slashes */
+char* fix_slashes_in_place(const char *path, char *buf, size_t nbuf) {
+    int pos = 0;
+    for (int i = 0; i < strlen(path); i++) {
+        if (i > 0 && path[i-1] == '/' && path[i] == '/') {
+            continue;
+        }
+        buf[pos++] = path[i];
+        if (pos >= nbuf) {
+            return buf;
+        }
+    }
+    return NULL;
+}
 
 void PIUTools_Path_Resolve(const char* in_path, char* out_path){
     if(!module_initialized){init_paths();}
+    char normalized_path[PATH_MAX+1] = {0x00};
     char tmp_path[1024] = {0x00};
+
+    fix_slashes_in_place(in_path, normalized_path, PATH_MAX);
+
     // Handle GAME_ROM_PATH
-    if(strncmp(in_path,GAME_ROM_PATH_TAG,strlen(GAME_ROM_PATH_TAG)) == 0){
-        sprintf(tmp_path,"%s%s",PIUTools_Path_Game_ROM,in_path+strlen(GAME_ROM_PATH_TAG));
+    if(strncmp(normalized_path,GAME_ROM_PATH_TAG,strlen(GAME_ROM_PATH_TAG)) == 0){
+        sprintf(tmp_path,"%s%s",PIUTools_Path_Game_ROM,normalized_path+strlen(GAME_ROM_PATH_TAG));
         strcpy(out_path,tmp_path);
         return;        
     }
     // Handle TMP_ROOT_PATH
-    if(strncmp(in_path,TMP_ROOT_PATH_TAG,strlen(TMP_ROOT_PATH_TAG)) == 0){
-        sprintf(tmp_path,"%s%s",PIUTools_Path_Tmp,in_path+strlen(TMP_ROOT_PATH_TAG));
+    if(strncmp(normalized_path,TMP_ROOT_PATH_TAG,strlen(TMP_ROOT_PATH_TAG)) == 0){
+        sprintf(tmp_path,"%s%s",PIUTools_Path_Tmp,normalized_path+strlen(TMP_ROOT_PATH_TAG));
         strcpy(out_path,tmp_path);
         return;        
     }    
     // Handle PIUTOOLS_ROOT_PATH
-    if(strncmp(in_path,PIUTOOLS_ROOT_PATH_TAG,strlen(PIUTOOLS_ROOT_PATH_TAG)) == 0){
-        sprintf(tmp_path,"%s%s",PIUTools_Path_Root,in_path+strlen(PIUTOOLS_ROOT_PATH_TAG));
+    if(strncmp(normalized_path,PIUTOOLS_ROOT_PATH_TAG,strlen(PIUTOOLS_ROOT_PATH_TAG)) == 0){
+        sprintf(tmp_path,"%s%s",PIUTools_Path_Root,normalized_path+strlen(PIUTOOLS_ROOT_PATH_TAG));
         strcpy(out_path,tmp_path);
         return;        
     }       
     // Handle Save Root Path
-    if(strncmp(in_path,SAVE_ROOT_PATH_TAG,strlen(SAVE_ROOT_PATH_TAG)) == 0){
-        sprintf(tmp_path,"%s%s",PIUTools_Path_Game_Save,in_path+strlen(SAVE_ROOT_PATH_TAG));
+    if(strncmp(normalized_path,SAVE_ROOT_PATH_TAG,strlen(SAVE_ROOT_PATH_TAG)) == 0){
+        sprintf(tmp_path,"%s%s",PIUTools_Path_Game_Save,normalized_path+strlen(SAVE_ROOT_PATH_TAG));
         strcpy(out_path,tmp_path);
         return;        
     }  
     // Handle Plugin Path
-    if(strncmp(in_path,PLUGIN_PATH_TAG,strlen(PLUGIN_PATH_TAG)) == 0){
-        sprintf(tmp_path,"%s%s",PIUTools_Path_Plugin,in_path+strlen(PLUGIN_PATH_TAG));
+    if(strncmp(normalized_path,PLUGIN_PATH_TAG,strlen(PLUGIN_PATH_TAG)) == 0){
+        sprintf(tmp_path,"%s%s",PIUTools_Path_Plugin,normalized_path+strlen(PLUGIN_PATH_TAG));
         strcpy(out_path,tmp_path);
         return;        
     }    
     // Handle Game Config Path
-    if(strncmp(in_path,GAME_CONFIG_PATH,strlen(GAME_CONFIG_PATH)) == 0){
-        sprintf(tmp_path,"%s%s",PIUTools_Path_Game_Config,in_path+strlen(GAME_CONFIG_PATH));
+    if(strncmp(normalized_path,GAME_CONFIG_PATH,strlen(GAME_CONFIG_PATH)) == 0){
+        sprintf(tmp_path,"%s%s",PIUTools_Path_Game_Config,normalized_path+strlen(GAME_CONFIG_PATH));
         strcpy(out_path,tmp_path);
         return;        
     }       
     if(in_path[0] == '.'){
-        realpath(in_path,tmp_path);
+        realpath(normalized_path,tmp_path);
         strcpy(out_path,tmp_path);
         return;
     }      
