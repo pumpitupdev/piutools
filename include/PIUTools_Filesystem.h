@@ -30,5 +30,5 @@ int PIUTools_Filesystem_Path_Exist(const char* path);
 
 PPathSubst PIUTools_Filesystem_AddRedirect(const char* path_from, const char* path_to);
 void PIUTools_Filesystem_RemoveRedirect(PPathSubst entry);
-char* PIUTools_Filesystem_Redirect_Path(const char* orig_path, char* sub_path);
+char* PIUTools_Filesystem_Redirect_Path(const char* func_name, const char* orig_path, char* sub_path);
 void PIUTools_Filesystem_Redirect_Init(void);
