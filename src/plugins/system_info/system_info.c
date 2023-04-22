@@ -120,9 +120,11 @@ const PHookEntry plugin_init(void){
     PIUTools_Filesystem_AddRedirect("/sys/firmware/efi/systab",fake_systab_path);  
 
     // Create a Fake cpuinfo file
+    char cpu_info_str[1024] = {0x00};
+    sprintf(cpu_info_str,"model name      : %s",cpuinfo);
     PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_cpuinfo",fake_cpuinfo_path);
     fp = fopen(fake_cpuinfo_path,"wb");
-    fwrite(cpuinfo,strlen(cpuinfo),1,fp);
+    fwrite(cpu_info_str,strlen(cpu_info_str),1,fp);
     fclose(fp);
     PIUTools_Filesystem_AddRedirect("/proc/cpuinfo",fake_cpuinfo_path);   
 
