@@ -36,7 +36,7 @@ static int block_connect(int sockfd, const struct sockaddr *addr, socklen_t addr
     //if(!strcmp(ipstr,"")){
     //    return -1;
    // }
-    
+    return -1;
     // call the original connect function
     return next_connect(sockfd, addr, addrlen);
 }
