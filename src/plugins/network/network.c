@@ -33,7 +33,7 @@ static int block_connect(int sockfd, const struct sockaddr *addr, socklen_t addr
     inet_ntop(addr->sa_family, src, ipstr, sizeof(ipstr));
     //printf("Connect: IP: %s\n",ipstr);
     printf("Connecting to IP address: %s\n", ipstr);
-    //if(!strcmp(ipstr,"115.68.108.183")){
+    //if(!strcmp(ipstr,"")){
     //    return -1;
    // }
     
