@@ -180,6 +180,19 @@ int PIUTools_Filesystem_Create_Directory(const char* path){
 }
 
 
+static char* fix_slashes_in_place(const char *path, char *buf, size_t nbuf) {
+    int pos = 0;
+    for (int i = 0; i < strlen(path); i++) {
+        if (i > 0 && path[i-1] == '/' && path[i] == '/') {
+            continue;
+        }
+        buf[pos++] = path[i];
+        if (pos >= nbuf) {
+            return buf;
+        }
+    }
+    return NULL;
+}
 
 char* PIUTools_Filesystem_Redirect_Path(const char* func, const char* orig_path, char* sub_path){
     if(!module_initialized){piutools_filesystem_init();}
@@ -218,6 +231,13 @@ char* PIUTools_Filesystem_Redirect_Path(const char* func, const char* orig_path,
             }
         }         
     }
+    
+    if(strstr(orig_path,"//")){
+        fix_slashes_in_place(orig_path,sub_path,1024);
+        if(orig_path){DBG_printf("[%s] Bypass w/ Pathfix: %s",func,sub_path);}        
+        return sub_path;
+    }
+    
     if(orig_path){DBG_printf("[%s] Bypass: %s",func,orig_path);}    
     return (char*)orig_path;
 }
