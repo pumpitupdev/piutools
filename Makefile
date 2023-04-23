@@ -37,7 +37,7 @@ GENERIC_PLUGINS := asound ata_hdd ata_hdd_infinity eeprom exec_blocker fake_libu
 		   io_buttonboard io_mk5io io_mk6io locale lockchip \
 		   network pit s3d_opengl sighandler statfix system_info \
 		   ticket_dispenser
-PLUGINS := microdog stlfix usb_profile x11_keyboard_input $(GENERIC_PLUGINS)
+PLUGINS := ds1963s_in_ds2480b microdog stlfix usb_profile x11_keyboard_input $(GENERIC_PLUGINS)
 PLUGIN_OBJS := $(patsubst %,$(PLUGIN_BUILD_ROOT)/%.plugin,$(PLUGINS))
 
 .PHONY: plugins
@@ -67,6 +67,22 @@ $(PLUGIN_BUILD_ROOT)/usb_profile.plugin: $(wildcard src/plugins/usb_profile/*.c)
 $(PLUGIN_BUILD_ROOT)/x11_keyboard_input.plugin: $(wildcard src/plugins/x11_keyboard_input/*.c) | $(PLUGIN_BUILD_ROOT)
 	cc -shared -m32 -fPIC src/plugins/x11_keyboard_input/*.c $(PLUGIN_INCLUDES) -lX11 -o $@
 
+DS1963S_UTILS_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/1-wire-bus.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/coroutine.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/ds1963s-common.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/ds1963s-device.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/ds2480b-device.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/sha1.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-factory.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-pty.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport-unix.c \
+						 src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/transport.c
+
+DS1963S_IN_DS2480B_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s_in_ds2480b.c \
+							  src/plugins/ds1963s_in_ds2480b/base64.c
+
+$(PLUGIN_BUILD_ROOT)/ds1963s_in_ds2480b.plugin: $(DS1963S_UTILS_SOURCES) $(DS1963S_IN_DS2480B_SOURCES)
+	cc -shared -m32 -fPIC $(CFLAGS) $(DS1963s_IN_DS2480B_SOURCES) $(DS1963S_UTILS_SOURCES) $(PLUGIN_INCLUDES) -lpthread -I src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src -o $@
 
 .PHONY: clean
 clean:
