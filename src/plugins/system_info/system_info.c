@@ -23,6 +23,7 @@ motherboard_product=G41C-GS
 
 static char motherboard_vendor[128]={0x00};
 static char motherboard_product[128]={0x00};
+static char mac_address[128]={0x00};
 static char cpuinfo[128]={0x00};
 static int cpu_mhz = 0;
 
@@ -33,6 +34,7 @@ static char fake_dev_mem_path[1024];
 static char fake_cpuinfo_path[1024];
 static char fake_board_vendor_path[1024];
 static char fake_board_name_path[1024];
+static char fake_mac_address_path[1024];
 static char fake_systab_path[1024];
 
 typedef int (*sysinfo_t)(struct sysinfo *info);
@@ -80,6 +82,7 @@ static HookEntry entries[] = {
     CONFIG_ENTRY("SYSTEM_INFO","cpu_name",CONFIG_TYPE_STRING,cpuinfo,sizeof(cpuinfo)),
     CONFIG_ENTRY("SYSTEM_INFO","cpu_mhz",CONFIG_TYPE_INT,&cpu_mhz,sizeof(cpu_mhz)),
     CONFIG_ENTRY("SYSTEM_INFO","gpu_name",CONFIG_TYPE_STRING,gpu_name,sizeof(gpu_name)),      
+    CONFIG_ENTRY("SYSTEM_INFO","mac_address",CONFIG_TYPE_STRING,mac_address,sizeof(mac_address)),  
     CONFIG_ENTRY("SYSTEM_INFO","ram_mb",CONFIG_TYPE_INT,&ram_mb,sizeof(ram_mb)),
   {}
 };
@@ -141,5 +144,16 @@ const PHookEntry plugin_init(void){
     fwrite(motherboard_product,strlen(motherboard_product),1,fp);
     fclose(fp);
     PIUTools_Filesystem_AddRedirect("/sys/class/dmi/id/board_name",fake_board_name_path); 
+
+    // Create a Fake MAC Address if it exists
+    if(strlen(mac_address) > 1){
+        PIUTools_Path_Resolve("${TMP_ROOT_PATH}/fake_eth0_address",fake_mac_address_path);
+    fp = fopen(fake_mac_address_path,"wb");
+    fwrite(mac_address,strlen(mac_address),1,fp);
+    fclose(fp);
+    PIUTools_Filesystem_AddRedirect("/sys/class/net/eth0/address",fake_mac_address_path);  
+    }
+
+
     return entries;
 }
