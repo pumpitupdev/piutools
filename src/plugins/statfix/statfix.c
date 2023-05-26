@@ -11,9 +11,9 @@ typedef int(*fxstat_t)(int ver, int fildes, struct stat *stat_buf);
 typedef int(*xstat_t)(int ver, const char *path, struct stat *stat_buf);
 typedef int(*lxstat_t)(int ver, const char *path, struct stat *stat_buf);
 
-fxstat_t next_fxstat;
-xstat_t next_xstat;
-lxstat_t next_lxstat;
+static fxstat_t next_fxstat;
+static xstat_t next_xstat;
+static lxstat_t next_lxstat;
 
 static int fix_fxstat(int ver, int fildes, struct stat *stat_buf){
     int res = next_fxstat(ver,fildes,stat_buf);

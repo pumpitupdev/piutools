@@ -7,20 +7,20 @@
 #include <PIUTools_SDK.h>
 
 typedef int (*fork_t)(void);
-fork_t next_fork;
+static fork_t next_fork;
 typedef int (*system_func_ptr)(const char *command);
-system_func_ptr next_system;
+static system_func_ptr next_system;
 
 typedef int (*execvp_func_ptr)(const char *file, char *const argv[]);
 typedef int (*execv_func_ptr)(const char *file, char *const argv[]);
-execv_func_ptr next_execv;
-execvp_func_ptr next_execvp;
+static execv_func_ptr next_execv;
+static execvp_func_ptr next_execvp;
 
 typedef int (*spawnvp_func_t)(int mode, const char *path, char *const argv[]);
-spawnvp_func_t next_spawnvp;
+static spawnvp_func_t next_spawnvp;
 
 typedef int (*original_execl_t)(const char *path, const char *arg, ...);
-original_execl_t next_execl;
+static original_execl_t next_execl;
 
 int block_spawnvp(int mode, const char *path, char *const argv[]){
     int res = 0;//next_spawnvp(mode,path,argv);

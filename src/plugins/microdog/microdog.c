@@ -30,7 +30,7 @@ static int md34_ioctl(int fd, int request, void* data) {
 }
 
 typedef int (*select_func_t)(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
-select_func_t next_select;
+static select_func_t next_select;
 int md40_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout){
     // Bit on the hacky side, but we're waiting until 'select' to make the emulator do its thing.
     if(nfds-1 == md40_last_sock_fd){
@@ -41,7 +41,7 @@ int md40_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, 
 }
 
 typedef ssize_t (*recvfrom_func_t)(int sockfd, void *buf, size_t len, int flags, void *src_addr, void *addrlen);
-recvfrom_func_t next_recvfrom;
+static recvfrom_func_t next_recvfrom;
 ssize_t md40_recvfrom(int sockfd, void *buf, size_t len, int flags, void *src_addr, void *addrlen) {
    // printf("md40_recvfrom\n");
     // If this is our MicroDog USBDaemon Response, do the thing!
@@ -59,7 +59,7 @@ ssize_t md40_recvfrom(int sockfd, void *buf, size_t len, int flags, void *src_ad
 }
 
 typedef ssize_t (*sendto_func_t)(int sockfd, const void *buf, size_t len, int flags, void *dest_addr, unsigned int addrlen);
-sendto_func_t next_sendto;
+static sendto_func_t next_sendto;
 ssize_t md40_sendto(int sockfd, const void *buf, size_t len, int flags, void *dest_addr, unsigned int addrlen) {
    // printf("md40_sendto\n");
     // If this is our MicroDog USBDaemon, do the thing pls!

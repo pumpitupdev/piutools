@@ -38,9 +38,9 @@ static char fake_mac_address_path[1024];
 static char fake_systab_path[1024];
 
 typedef int (*sysinfo_t)(struct sysinfo *info);
-sysinfo_t next_sysinfo;
+static sysinfo_t next_sysinfo;
 typedef const GLubyte *(*glGetString_func)(GLenum name);
-glGetString_func next_glGetString;
+static glGetString_func next_glGetString;
 
 
 // Capture sysinfo and modify the amount of reported available RAM.

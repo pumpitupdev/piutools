@@ -19,7 +19,7 @@ typedef int (*ioctl_func_t)(int fd, int request, void* data);
 static ioctl_func_t next_ioctl;
 
 typedef int (*open_func_t)(const char *, int);
-open_func_t next_open;
+static open_func_t next_open;
 
 static int dispenser_enabled;
 static int starting_tickets = 100;
