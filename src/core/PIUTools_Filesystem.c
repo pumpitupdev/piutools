@@ -27,7 +27,7 @@ PathSubst PIUTools_Filesystem_Sub[MAX_FILESYSTEM_SUB];
 
 // Redirect Hooks
 typedef int (*open_func_t)(const char *, int);
-open_func_t next_open;
+static open_func_t next_open;
 
 int redirect_fs_open(const char *pathname, int flags) {
     char n_path[1024] = {0x00};    
@@ -35,7 +35,7 @@ int redirect_fs_open(const char *pathname, int flags) {
 }
 
 typedef int (*mkdir_func)(const char *, mode_t);
-mkdir_func next_mkdir;
+static mkdir_func next_mkdir;
 
 int redirect_fs_mkdir(const char *pathname, mode_t mode) {
     char n_path[1024] = {0x00};    
@@ -43,7 +43,7 @@ int redirect_fs_mkdir(const char *pathname, mode_t mode) {
 }
 
 typedef FILE* (*fopen_t)(const char*, const char*);
-fopen_t next_fopen;
+static fopen_t next_fopen;
 
 FILE * redirect_fs_fopen(const char * filename, const char * mode){
     char n_path[1024] = {0x00};
@@ -51,14 +51,14 @@ FILE * redirect_fs_fopen(const char * filename, const char * mode){
 }
 
 typedef int (*openat_t)(int dirfd, const char *pathname, int flags);
-openat_t next_openat;
+static openat_t next_openat;
 int redirect_fs_openat(int dirfd, const char *pathname, int flags){
     char n_path[1024] = {0x00};
     return next_openat(dirfd,PIUTools_Filesystem_Redirect_Path("openat",pathname,n_path),flags);
 }
 
 typedef DIR *(*opendir_func_t)(const char *name);
-opendir_func_t next_opendir;
+static opendir_func_t next_opendir;
 
 DIR* redirect_fs_opendir(const char *pathname) {
     char n_path[1024] = {0x00};
@@ -66,7 +66,7 @@ DIR* redirect_fs_opendir(const char *pathname) {
 }
 
 typedef int (*stat64_func_t)(const char *pathname, void *statbuf);
-stat64_func_t next_stat64;
+static stat64_func_t next_stat64;
 int redirect_fs_stat64(const char* pathname, void*statbuf){
     char n_path[1024] = {0x00};
     return next_stat64(PIUTools_Filesystem_Redirect_Path("stat64",pathname,n_path),statbuf);
