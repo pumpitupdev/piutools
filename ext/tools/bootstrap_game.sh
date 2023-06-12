@@ -5,7 +5,7 @@ cat $PIUTOOLS_PATH/tools/pump_arrows.graphic
 #cat $PIUTOOLS_PATH/am.graphic
 #cat $PIUTOOLS_PATH/pumplogo.graphic
 # Set PIUTools Stuff
-mkdir $PIUTOOLS_TMP_PATH
+mkdir -p $PIUTOOLS_TMP_PATH
 
 # Read the list of gamedata roms and mount each.
 IFS=',' read -ra roms_array <<< "$PIUTOOLS_ROMS"
