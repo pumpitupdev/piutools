@@ -28,7 +28,7 @@ static void load_plugin(const char* plugin_name){
 
     if (cur_entry != NULL) {
         while (cur_entry->hook_type != HOOK_ENTRY_END) {
-            PIUTools_Plugin_LoadHook((void*)cur_entry);
+            PIUTools_Plugin_LoadHook((void*)cur_entry, plugin_name);
             // Move to the next entry
             cur_entry++;
         }
@@ -58,17 +58,17 @@ void PIUTools_Plugin_Init(void){
     ini_parse(plugin_config_path,parse_loader_config,NULL);
 }
 
-void PIUTools_Plugin_LoadHook(void* ventry){
+void PIUTools_Plugin_LoadHook(void* ventry, const char *plugin_name){
     PHookEntry entry = (PHookEntry)ventry;
     if(!module_initialized){PIUTools_Plugin_Init();}    
     if(entry->hook_enabled){           
         void* rfa;
         switch(entry->hook_type){
             case HOOK_TYPE_INLINE:
-                rfa = PIUTools_Hook_Inline(entry->source_library_name,entry->target_function_name, entry->hook_function_addr);
+                rfa = PIUTools_Hook_Inline(entry->source_library_name,entry->target_function_name, entry->hook_function_addr, plugin_name);
                 break;
             case HOOK_TYPE_IMPORT:
-                rfa = PIUTools_Hook_Import(entry->target_binary_name,entry->source_library_name,entry->target_function_name, entry->hook_function_addr);
+                rfa = PIUTools_Hook_Import(entry->target_binary_name,entry->source_library_name,entry->target_function_name, entry->hook_function_addr, plugin_name);
                 break;           
             default:
                 break;         
