@@ -69,6 +69,7 @@ fi
 
 # Load Our Native Paths
 piutools_native_path=$(realpath $(pwd))
+piutools_native_src_path=$(realpath $piutools_native_path/../src)
 piutools_native_rom_path=$piutools_native_path/roms/$game_name
 piutools_native_config_path=$piutools_native_path/config/$game_name/$game_version.conf
 
@@ -93,17 +94,25 @@ piutools_rom=$piutools_root/rom
 piutools_save=$piutools_root/save
 piutools_mnt=$piutools_root/mnt
 piutools_tmp=$piutools_root/tmp
+piutools_src=$piutools_root/src
 
 #run_command= RUN_STRACE, RUN_GDB, RUN_GAME,RUN_LTRACE
+
+img_name="${PIUTOOLS_CONTAINER_IMG_NAME:-"pumpos_classic"}"
 
 docker_args="run --device /dev/fuse --cap-add SYS_ADMIN --rm -it"
 # Add the Graphics Support Stuff
 docker_args+=" --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY"
 # Add the Sound Stuff
-docker_args+=" -e PULSE_SERVER=$PULSE_SERVER -v /mnt/wslg/:/mnt/wslg/"
+if [ -e /mnt/wslg ]; then
+    docker_args+=" -e PULSE_SERVER=$PULSE_SERVER -v /mnt/wslg/:/mnt/wslg/"
+fi
+# Allow ptrace (and disabling ASLR) for gdb and strace to work
+docker_args+=" --cap-add=SYS_PTRACE --security-opt seccomp=unconfined"
 # Add Our PIUTools Mounts
 docker_args+=" -v $piutools_native_path:$piutools_bin"
 docker_args+=" -v $piutools_native_rom_path:$piutools_rom:ro"
+docker_args+=" -v $piutools_native_src_path:$piutools_src:ro"
 docker_args+=" -v $piutools_native_save_path:$piutools_save"
 # Add Our PIUTools Envars
 docker_args+=" -e PIUTOOLS_GAME_NAME=$game_name"
@@ -112,20 +121,22 @@ docker_args+=" -e PIUTOOLS_PATH=$piutools_bin"
 docker_args+=" -e PIUTOOLS_CONFIG_PATH=$piutools_config_path"
 docker_args+=" -e PIUTOOLS_PLUGIN_PATH=$piutools_plugins_path"
 docker_args+=" -e PIUTOOLS_ROM_PATH=$piutools_rom"
+docker_args+=" -e PIUTOOLS_SRC_PATH=$piutools_src"
 docker_args+=" -e PIUTOOLS_SAVE_PATH=$piutools_save"
 docker_args+=" -e PIUTOOLS_TMP_PATH=$piutools_tmp"
 docker_args+=" -e PIUTOOLS_MNT_PATH=$piutools_mnt"
+docker_args+=" -e PIUTOOLS_SRC_PATH=$piutools_src"
 docker_args+=" -e PIUTOOLS_ROMS=$game_roms"
 docker_args+=" -e PIUTOOLS_EXE_PATH=$exe_path"
 docker_args+=" -e PIUTOOLS_EXE_ARGS=$exe_args"
 docker_args+=" -e PIUTOOLS_GAME_DIR=$exe_game_dir"
 docker_args+=" -e PIUTOOLS_DEBUG=1"
-docker_args+=" -e RUN_GAME=1"
-#docker_args+=" -e RUN_GDB=1"
-#docker_args+=" -e RUN_STRACE=1"
-#docker_args+=" -e RUN_LTRACE=1"
+docker_args+=" -e RUN_GAME=${RUN_GAME:-""}"
+docker_args+=" -e RUN_GDB=${RUN_GDB:-""}"
+docker_args+=" -e RUN_STRACE=${RUN_STRACE:-""}"
+docker_args+=" -e RUN_LTRACE=${RUN_STRACE:-""}"
 
-docker_args+=" pumpos_classic $piutools_bin/tools/bootstrap_game.sh"
+docker_args+=" ${img_name} $piutools_bin/tools/bootstrap_game.sh"
 
 echo $docker_args
 
