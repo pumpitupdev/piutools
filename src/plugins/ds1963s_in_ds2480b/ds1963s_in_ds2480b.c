@@ -22,26 +22,26 @@
 
 /* file ops */
 typedef int (*open_func_t)(const char *, int);
-open_func_t next_open;
+static open_func_t next_open;
 typedef int (*close_func_t)(int);
-close_func_t next_close;
+static close_func_t next_close;
 
-int cur_fd = -1;
+static int cur_fd = -1;
 static char *pathname;
 static struct ds2480b_device ds2480b;
 static struct ds1963s_device ds1963s;
 static struct transport *serial;
-struct one_wire_bus bus;
-pthread_t one_wire_thread;
+static struct one_wire_bus bus;
+static pthread_t one_wire_thread;
 
 // static data that should be populated in the ds1963s authenticated
 // data pages upon initialization
 #define DS1963S_NUM_AUTH_DATA_PAGES 16
 #define DS1963S_AUTH_PAGE_SIZE 32
-char *static_auth_data_config_b64[DS1963S_NUM_AUTH_DATA_PAGES][128] = {0};
-uint8_t *auth_data_page_static_data[DS1963S_NUM_AUTH_DATA_PAGES] = {0};
+static char static_auth_data_config_b64[DS1963S_NUM_AUTH_DATA_PAGES][128] = {0};
+static uint8_t *auth_data_page_static_data[DS1963S_NUM_AUTH_DATA_PAGES] = {0};
 
-void *one_wire_loop() {
+static void *one_wire_loop() {
     one_wire_bus_run(&bus);
     DBG_printf("%s: one-wire thread exited\n", __FUNCTION__);
     return NULL;
@@ -58,10 +58,10 @@ int ds1963s_open(const char *path, int flags) {
     return next_open(path, flags);
 }
 
-void _populate_auth_page_static_data(struct ds1963s_device *dev) {
+static void _populate_auth_page_static_data(struct ds1963s_device *dev) {
     for (int i = 0; i < DS1963S_NUM_AUTH_DATA_PAGES; i++) {
         if (auth_data_page_static_data[i] != NULL) {
-            memcpy(&ds1963s_device->data_memory[i*32], auth_data_page_static_data[i], 32);
+            memcpy(&(ds1963s.data_memory[i*32]), auth_data_page_static_data[i], 32);
         }
     }
 }
@@ -70,9 +70,11 @@ void _populate_auth_page_static_data(struct ds1963s_device *dev) {
  * converts base64 data and saves it as static data for the given auth
  * page
  */
-void _record_auth_page_static_data(int pagenum, char *data) {
+static void _record_auth_page_static_data(int pagenum, char *data) {
     uint8_t *decoded_data = (uint8_t *)malloc(DS1963S_AUTH_PAGE_SIZE);
     base64_decode(data, strlen(data), decoded_data);
+    DBG_printf("[%s:%d] authpage%d: %s\n", __FILE__, __LINE__, pagenum, decoded_data);
+    auth_data_page_static_data[pagenum] = decoded_data;
 }
 
 int ds1963s_close(int fd) {
@@ -173,7 +175,6 @@ const PHookEntry plugin_init(){
         struct transport_pty_data *pdata;
         pdata = (struct transport_pty_data *)serial->private_data;
         pathname = pdata->pathname_slave;
-        PIUTools_Filesystem_AddRedirect(DEFAULT_SERIAL_DEVICE,pathname);
         DBG_printf("[%s] Fake ds1963s ready at %s\n", __FILE__, pathname);
     }
 
@@ -189,5 +190,5 @@ const PHookEntry plugin_init(){
         return NULL;
     }
 
-    return NULL;
+    return entries;
 }
