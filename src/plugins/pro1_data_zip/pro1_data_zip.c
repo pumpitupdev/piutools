@@ -1,4 +1,5 @@
 /**
+ * vim: set et sw=4 ts=4:
  * pro1_data_zip: add transparent encryption to prior decrypted data
  * zips for Pump Pro 1
  */
@@ -232,7 +233,7 @@ ssize_t pro1_data_zip_read(int fd, void *buf, size_t count) {
         got += header_count;
     }
     if (zip_ctx->pos < sig_start && remaining > 0) {
-        DBG_printf("(pos:%d) reading out data\n", zip_ctx->pos);
+        //DBG_printf("(pos:%d) reading out data\n", zip_ctx->pos);
         // how much data we're going to process, clamped to how much data
         // is actually available
         size_t encrypted_data_remaining = min(remaining, sig_start-zip_ctx->pos);
@@ -283,7 +284,7 @@ ssize_t pro1_data_zip_read(int fd, void *buf, size_t count) {
         size_t sig_available = sig_end - zip_ctx->pos;
         size_t read_from_sig = min(sig_available, min(remaining, sizeof(zip_ctx->sig)));
         DBG_printf("(pos:%d) reading out sig (read_from_sig:%d)\n", zip_ctx->pos, read_from_sig);
-        memcpy(buf+got, (void *)zip_ctx->sig, read_from_sig);
+        memcpy(buf+got, (void *)(&zip_ctx->sig[zip_ctx->pos - sig_start]), read_from_sig);
         zip_ctx->pos += read_from_sig;
         got += read_from_sig;
     }
@@ -401,14 +402,16 @@ void *pro1_data_zip_string_cons_hook(void *this, const char *str, unsigned int s
 }
 
 static HookEntry entries[] = {
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "open", pro1_data_zip_open, &next_open, 1),
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "read", pro1_data_zip_read, &next_read, 1),
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "lseek", pro1_data_zip_lseek, &next_lseek, 1),
-    HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "close", pro1_data_zip_close, &next_close, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "open", pro1_data_zip_open, &next_open, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "read", pro1_data_zip_read, &next_read, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "lseek", pro1_data_zip_lseek, &next_lseek, 1),
+    HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libc.so.6", "close", pro1_data_zip_close, &next_close, 1),
+    /*
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libpthread.so.0", "open", pro1_data_zip_open, &next_open, 1),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libpthread.so.0", "read", pro1_data_zip_read, &next_read, 1),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libpthread.so.0", "lseek", pro1_data_zip_lseek, &next_lseek, 1),
     HOOK_ENTRY(HOOK_TYPE_INLINE, HOOK_TARGET_BASE_EXECUTABLE, "libpthread.so.0", "close", pro1_data_zip_close, &next_close, 1),
+    */
 
     // std::string::string(char const*,uint,std::allocator<char> const&)
     HOOK_ENTRY(HOOK_TYPE_IMPORT, HOOK_TARGET_BASE_EXECUTABLE, "libstdc++.so.5", "_ZNSsC2EPKcjRKSaIcE", pro1_data_zip_string_cons_hook, &next_string_cons, 1),

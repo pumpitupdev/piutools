@@ -95,7 +95,7 @@ int generate_file_signature(zip_enc_context *ctx, int fd,
         uint8_t *out) {
     // get file size (sans sig and footer)
     off_t amt = lseek_func(fd, 0, SEEK_END) - 133;
-    DBG_printf("[sig] File size: %llu\n", amt);
+    DBG_printf("[sig] File size: %lu\n", amt);
     lseek_func(fd, 0, SEEK_SET);
 
     // get double SHA1 of header+data
@@ -118,9 +118,10 @@ int generate_file_signature(zip_enc_context *ctx, int fd,
 
     sha1_init(&shactx);
     sha1_init(&shactx2);
+    long curpos = 0;
 
     while (pos < amt) {
-        lseek_func(fd, pos, SEEK_SET);
+        curpos = lseek_func(fd, pos, SEEK_SET);
         readsize = (amt < 0x10000) ? amt : 0x10000; 
         got = read_func(fd, buf, readsize);
         if (got != readsize) {
@@ -128,6 +129,7 @@ int generate_file_signature(zip_enc_context *ctx, int fd,
             return -1;
         }
         sha1_process(&shactx, buf, got);
+        DBG_printf("[pro1_data_zip:%s](%s) processed %d bytes at %lu(%lu)\n", __FUNCTION__, ctx->pathname, got, curpos, pos);
         if (pos + got >= amt) {
             break;
         }
