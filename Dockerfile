@@ -1,5 +1,5 @@
 # Use a rather old version of ubuntu to ensure compatibility regarding libc
-FROM --platform=linux/amd64 debian:9
+FROM --platform=linux/amd64 ubuntu:20.04
 LABEL description="Build environment for piutools"
 
 # Install build dependencies, multilib to get 32-bit versions
@@ -19,6 +19,7 @@ RUN apt-get install -y libx11-dev:i386
 RUN apt-get install -y libcurl4-gnutls-dev:i386
 RUN apt-get install -y libglu1-mesa-dev:i386
 RUN apt-get install -y libgl1:i386
+RUN apt-get install -y sudo
 
 # Delete apt-cache to reduce image size
 RUN rm -rf /var/lib/apt/lists/*
@@ -27,4 +28,7 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN mkdir /piutools
 WORKDIR /piutools
 
-# docker build -t piutools_buildenv . 
+COPY entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
+# docker build -t piutools_buildenv .

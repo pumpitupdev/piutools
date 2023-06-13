@@ -115,7 +115,7 @@ void PIUTools_Filesystem_Redirect_Init(void){
         PHookEntry fsredirect_entry = filesystem_redirect_entries;
         if (fsredirect_entry != NULL) {
             while (fsredirect_entry->hook_type != HOOK_ENTRY_END) {
-                PIUTools_Plugin_LoadHook(fsredirect_entry);
+                PIUTools_Plugin_LoadHook(fsredirect_entry, "filesystem_redirect");
                 // Move to the next entry
                 fsredirect_entry++;
             }

@@ -23,8 +23,8 @@ typedef struct _HOOK_ENTRY {
 
 
 int PIUTools_Hook_GetFunctionAddress(const char* library_name, const char* function_name, void** pfunction_address);
-void* PIUTools_Hook_Inline(const char* module_name, const char* function_name, void* hook_addr);
-void* PIUTools_Hook_Import(const char* module_name, const char* library_name, const char* function_name, void* hook_addr);
+void* PIUTools_Hook_Inline(const char* module_name, const char* function_name, void* hook_addr, const char *plugin_name);
+void* PIUTools_Hook_Import(const char* module_name, const char* library_name, const char* function_name, void* hook_addr, const char *plugin_name);
 
 
 typedef const PHookEntry (*plugin_init_t)(void);
