@@ -96,11 +96,23 @@ piutools_tmp=$piutools_root/tmp
 
 #run_command= RUN_STRACE, RUN_GDB, RUN_GAME,RUN_LTRACE
 
-docker_args="run --device /dev/fuse --cap-add SYS_ADMIN --rm -it"
-# Add the Graphics Support Stuff
-docker_args+=" --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY"
-# Add the Sound Stuff
-docker_args+=" -e PULSE_SERVER=$PULSE_SERVER -v /mnt/wslg/:/mnt/wslg/"
+# ---- Detect WSL or Native to Change Docker Options
+if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null ; then
+    docker_args="run --device /dev/fuse --cap-add SYS_ADMIN --rm -it"
+    # Add the Graphics Support Stuff
+    docker_args+=" --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY"
+    # Add the Sound Stuff
+    docker_args+=" -e PULSE_SERVER=$PULSE_SERVER -v /mnt/wslg/:/mnt/wslg/"
+else
+    docker_args="run --device /dev/fuse --cap-add SYS_ADMIN --rm -it --add-host host.docker.internal:host-gateway"
+    # Add the Graphics Support Stuff
+    docker_args+=" -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY"
+    # Add the Sound Stuff
+    docker_args+=" -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v /run/user/$(id -u):/run/user/$(id -u) --group-add $(getent group audio | cut -d: -f3)"
+fi
+
+
+# ---- END WSL ----
 # Add Our PIUTools Mounts
 docker_args+=" -v $piutools_native_path:$piutools_bin"
 docker_args+=" -v $piutools_native_rom_path:$piutools_rom:ro"
