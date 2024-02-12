@@ -81,7 +81,7 @@ DS1963S_UTILS_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src/1-wire
 DS1963S_IN_DS2480B_SOURCES := src/plugins/ds1963s_in_ds2480b/ds1963s_in_ds2480b.c \
 							  src/plugins/ds1963s_in_ds2480b/base64.c
 
-$(PLUGIN_BUILD_ROOT)/ds1963s_in_ds2480b.plugin: $(DS1963S_UTILS_SOURCES) $(DS1963S_IN_DS2480B_SOURCES)
+$(PLUGIN_BUILD_ROOT)/ds1963s_in_ds2480b.plugin: $(DS1963S_UTILS_SOURCES) $(DS1963S_IN_DS2480B_SOURCES) | $(PLUGIN_BUILD_ROOT)
 	cc -shared -m32 -fPIC $(CFLAGS) $(DS1963s_IN_DS2480B_SOURCES) $(DS1963S_UTILS_SOURCES) $(PLUGIN_INCLUDES) -lpthread -I src/plugins/ds1963s_in_ds2480b/ds1963s-utils/src -o $@
 
 .PHONY: clean
