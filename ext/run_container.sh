@@ -111,6 +111,8 @@ else
     docker_args+=" -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v /run/user/$(id -u):/run/user/$(id -u) --group-add $(getent group audio | cut -d: -f3)"
 fi
 
+# Disable AppArmor to prevent permission issues
+docker_args+=" --cap-add SYS_ADMIN --device /dev/fuse --security-opt apparmor:unconfined"
 
 # ---- END WSL ----
 # Add Our PIUTools Mounts
