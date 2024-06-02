@@ -139,6 +139,11 @@ docker_args+=" -e RUN_GAME=1"
 #docker_args+=" -e RUN_STRACE=1"
 #docker_args+=" -e RUN_LTRACE=1"
 
+# Enable IDA remote debug server. 
+# You must place your own IDA remote debug server executable named 'linux_server64' in the tools folder. Default port is 23946.
+#docker_args+=" -e RUN_IDA_DBG_SERVER=1"
+#docker_args+=" -p 23946:23946"
+
 docker_args+=" pumpos_classic $piutools_bin/tools/bootstrap_game.sh"
 
 echo $docker_args
