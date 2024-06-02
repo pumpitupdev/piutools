@@ -140,7 +140,8 @@ docker_args+=" -e RUN_GAME=1"
 #docker_args+=" -e RUN_LTRACE=1"
 
 # Enable IDA remote debug server. 
-# You must place your own IDA remote debug server executable named 'linux_server64' in the tools folder. Default port is 23946.
+# You must place your own IDA remote debug server executable named 'linux_server64' in the tools folder. 
+# Use 'host.docker.internal' as the hostname in IDA and the default port of 23946.
 #docker_args+=" -e RUN_IDA_DBG_SERVER=1"
 #docker_args+=" -p 23946:23946"
 
