@@ -57,6 +57,11 @@ if [ -d "$PIUTOOLS_ROM_PATH/libs" ]; then
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PIUTOOLS_ROM_PATH/libs
 fi
 
+# Runs a IDA remote debug server.
+if [ -n "$RUN_IDA_DBG_SERVER" ]; then
+	$PIUTOOLS_PATH/tools/linux_server64 &
+fi
+
 # Based on the command, we have a few execution options.
 if [ -n "$RUN_GDB" ]; then
   unset LD_PRELOAD
