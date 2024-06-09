@@ -58,6 +58,39 @@ $(foreach plugin_name,$(GENERIC_PLUGINS),$(eval $(call generic_plugin_build,$(pl
 $(PLUGIN_BUILD_ROOT)/microdog.plugin: $(wildcard src/plugins/microdog/*.c) src/plugins/microdog/microdog.c | $(PLUGIN_BUILD_ROOT)
 	cc -shared -m32 -fPIC src/plugins/microdog/microdog/*.c src/plugins/microdog/microdog.c $(PLUGIN_INCLUDES) -o $@
 
+reboot_blocker.plugin:
+	cc -shared -m32 -fPIC src/plugins/reboot_blocker/reboot_blocker.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+  
+pit.plugin:
+	cc -shared -m32 -fPIC src/plugins/pit/pit.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+reboot_blocker.plugin:
+	cc -shared -m32 -fPIC src/plugins/reboot_blocker/reboot_blocker.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+s3d_opengl.plugin:
+	cc -shared -m32 -fPIC src/plugins/s3d_opengl/s3d_opengl.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+sighandler.plugin:
+	cc -shared -m32 -fPIC src/plugins/sighandler/sighandler.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+statfix.plugin:
+	cc -shared -m32 -fPIC src/plugins/statfix/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+stlfix.plugin:
+	cc -shared -m32 -fPIC src/plugins/stlfix/*.c $(PLUGIN_INCLUDES) -ldl -o $(PLUGIN_BUILD_ROOT)/$@
+
+system_info.plugin:
+	cc -shared -m32 -fPIC src/plugins/system_info/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+ticket_dispenser.plugin:
+	cc -shared -m32 -fPIC src/plugins/ticket_dispenser/*.c $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+usb_profile.plugin:
+	cc -shared -m32 -fPIC src/plugins/usb_profile/*.c src/plugins/usb_profile/nx2/*.c src/plugins/usb_profile/nxa/*.c src/plugins/usb_profile/fex/*.c src/plugins/usb_profile/fiesta/*.c src/plugins/usb_profile/fiesta2/*.c src/plugins/usb_profile/prime/*.c -lpthread $(PLUGIN_INCLUDES) -o $(PLUGIN_BUILD_ROOT)/$@
+
+x11_keyboard_input.plugin:
+	cc -shared -m32 -fPIC src/plugins/x11_keyboard_input/*.c $(PLUGIN_INCLUDES) -lX11 -o $(PLUGIN_BUILD_ROOT)/$@
+=======
 $(PLUGIN_BUILD_ROOT)/stlfix.plugin: $(wildcard src/plugins/stlfix/*.c) | $(PLUGIN_BUILD_ROOT)
 	cc -shared -m32 -fPIC src/plugins/stlfix/*.c $(PLUGIN_INCLUDES) -ldl -o $@
 
