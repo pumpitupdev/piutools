@@ -365,7 +365,7 @@ void s3d_glTexImage2D(GLenum target, GLint level, GLint internalformat,
 }
 
 typedef int (*PFNGLXSWAPINTERVALSGIPROC)(int interval);
-PFNGLXSWAPINTERVALSGIPROC next_glXSwapIntervalSGI;
+static PFNGLXSWAPINTERVALSGIPROC next_glXSwapIntervalSGI;
 static int s3d_glXSwapIntervalSGI(int interval){
   if(glx_sgi_swap_supported == 0){return 0;}
   return next_glXSwapIntervalSGI(interval);

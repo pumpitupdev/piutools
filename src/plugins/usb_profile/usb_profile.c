@@ -27,7 +27,7 @@
 
 
 typedef int (*glob_func_t)(const char *, int, int (*)(const char *, int), glob_t *);
-glob_func_t next_glob = NULL;
+static glob_func_t next_glob = NULL;
 
 
 
@@ -194,9 +194,9 @@ int usb_profile_glob(const char *pattern, int flags, int (*errfunc)(const char *
 typedef int (*mount_func_t)(const char *source, const char *target,
                             const char *filesystemtype, unsigned long mountflags,
                             const void *data);
-mount_func_t next_mount;
+static mount_func_t next_mount;
 typedef int (*umount_func_t)(const char *target);
-umount_func_t next_umount;
+static umount_func_t next_umount;
 
 int usb_profile_mount(const char *source, const char *target,
                             const char *filesystemtype, unsigned long mountflags,

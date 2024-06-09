@@ -27,49 +27,49 @@ PathSubst PIUTools_Filesystem_Sub[MAX_FILESYSTEM_SUB];
 
 // Redirect Hooks
 typedef int (*open_func_t)(const char *, int);
-open_func_t next_open;
+static open_func_t next_open;
 
 int redirect_fs_open(const char *pathname, int flags) {
     char n_path[1024] = {0x00};    
-    return next_open(PIUTools_Filesystem_Redirect_Path(pathname,n_path), flags);
+    return next_open(PIUTools_Filesystem_Redirect_Path("open",pathname,n_path), flags);
 }
 
 typedef int (*mkdir_func)(const char *, mode_t);
-mkdir_func next_mkdir;
+static mkdir_func next_mkdir;
 
 int redirect_fs_mkdir(const char *pathname, mode_t mode) {
     char n_path[1024] = {0x00};    
-    return next_mkdir(PIUTools_Filesystem_Redirect_Path(pathname,n_path), mode);    
+    return next_mkdir(PIUTools_Filesystem_Redirect_Path("mkdir",pathname,n_path), mode);    
 }
 
 typedef FILE* (*fopen_t)(const char*, const char*);
-fopen_t next_fopen;
+static fopen_t next_fopen;
 
 FILE * redirect_fs_fopen(const char * filename, const char * mode){
     char n_path[1024] = {0x00};
-    return next_fopen(PIUTools_Filesystem_Redirect_Path(filename,n_path), mode);
+    return next_fopen(PIUTools_Filesystem_Redirect_Path("fopen",filename,n_path), mode);
 }
 
 typedef int (*openat_t)(int dirfd, const char *pathname, int flags);
-openat_t next_openat;
+static openat_t next_openat;
 int redirect_fs_openat(int dirfd, const char *pathname, int flags){
     char n_path[1024] = {0x00};
-    return next_openat(dirfd,PIUTools_Filesystem_Redirect_Path(pathname,n_path),flags);
+    return next_openat(dirfd,PIUTools_Filesystem_Redirect_Path("openat",pathname,n_path),flags);
 }
 
 typedef DIR *(*opendir_func_t)(const char *name);
-opendir_func_t next_opendir;
+static opendir_func_t next_opendir;
 
 DIR* redirect_fs_opendir(const char *pathname) {
     char n_path[1024] = {0x00};
-    return next_opendir(PIUTools_Filesystem_Redirect_Path(pathname,n_path));
+    return next_opendir(PIUTools_Filesystem_Redirect_Path("opendir",pathname,n_path));
 }
 
 typedef int (*stat64_func_t)(const char *pathname, void *statbuf);
-stat64_func_t next_stat64;
+static stat64_func_t next_stat64;
 int redirect_fs_stat64(const char* pathname, void*statbuf){
     char n_path[1024] = {0x00};
-    return next_stat64(PIUTools_Filesystem_Redirect_Path(pathname,n_path),statbuf);
+    return next_stat64(PIUTools_Filesystem_Redirect_Path("stat64",pathname,n_path),statbuf);
 }
 
 static HookEntry filesystem_redirect_entries[] = {
@@ -180,15 +180,28 @@ int PIUTools_Filesystem_Create_Directory(const char* path){
 }
 
 
+static char* fix_slashes_in_place(const char *path, char *buf, size_t nbuf) {
+    int pos = 0;
+    for (int i = 0; i < strlen(path); i++) {
+        if (i > 0 && path[i-1] == '/' && path[i] == '/') {
+            continue;
+        }
+        buf[pos++] = path[i];
+        if (pos >= nbuf) {
+            return buf;
+        }
+    }
+    return NULL;
+}
 
-char* PIUTools_Filesystem_Redirect_Path(const char* orig_path, char* sub_path){
+char* PIUTools_Filesystem_Redirect_Path(const char* func, const char* orig_path, char* sub_path){
     if(!module_initialized){piutools_filesystem_init();}
-
+    
     for(int i=0;i<num_subst_paths;i++){
         if(PIUTools_Filesystem_Sub[i].sub_type == SUB_TYPE_START){
             if(strncmp(orig_path,PIUTools_Filesystem_Sub[i].src_path,strlen(PIUTools_Filesystem_Sub[i].src_path)) == 0){
                 sprintf(sub_path,"%s%s",PIUTools_Filesystem_Sub[i].replacement_path,orig_path+strlen(PIUTools_Filesystem_Sub[i].src_path));
-                DBG_printf("[%s] Redirect 1: %s => %s",__FUNCTION__,orig_path,sub_path);                  
+                DBG_printf("[%s] Redirect 1: %s => %s",func,orig_path,sub_path);                  
                 return sub_path;
             }            
         }else if(PIUTools_Filesystem_Sub[i].sub_type == SUB_TYPE_ANY){
@@ -196,7 +209,7 @@ char* PIUTools_Filesystem_Redirect_Path(const char* orig_path, char* sub_path){
             if(strstr(orig_path,PIUTools_Filesystem_Sub[i].src_path) != NULL){
                 if(strcmp(orig_path,PIUTools_Filesystem_Sub[i].replacement_path)){
                     strcpy(sub_path,PIUTools_Filesystem_Sub[i].replacement_path);
-                    DBG_printf("[%s] Redirect 2: %s => %s",__FUNCTION__,orig_path,sub_path);                    
+                    DBG_printf("[%s] Redirect 2: %s => %s",func,orig_path,sub_path);                    
                     return sub_path;
                 }
             }
@@ -204,7 +217,7 @@ char* PIUTools_Filesystem_Redirect_Path(const char* orig_path, char* sub_path){
             if(strlen(orig_path) != strlen(PIUTools_Filesystem_Sub[i].src_path)){continue;}
             if(strcmp(orig_path,PIUTools_Filesystem_Sub[i].src_path) == 0){
                 strcpy(sub_path,PIUTools_Filesystem_Sub[i].replacement_path);
-                DBG_printf("[%s] Redirect FULL: %s => %s",__FUNCTION__,orig_path,sub_path);                    
+                DBG_printf("[%s] Redirect FULL: %s => %s",func,orig_path,sub_path);                    
                 return sub_path;
             }
         }else if(PIUTools_Filesystem_Sub[i].sub_type == SUB_TYPE_FILE){
@@ -212,13 +225,20 @@ char* PIUTools_Filesystem_Redirect_Path(const char* orig_path, char* sub_path){
             if(strcmp(PIUTools_Filesystem_GetFileName(orig_path),PIUTools_Filesystem_Sub[i].src_path) == 0){
                 if(strcmp(orig_path,PIUTools_Filesystem_Sub[i].replacement_path)){
                     strcpy(sub_path,PIUTools_Filesystem_Sub[i].replacement_path);
-                    DBG_printf("[%s] Redirect 3: %s => %s",__FUNCTION__,orig_path,sub_path);                    
+                    DBG_printf("[%s] Redirect 3: %s => %s",func,orig_path,sub_path);                    
                     return sub_path;
                 }
             }
         }         
     }
-    if(orig_path){DBG_printf("[%s] Bypass: %s",__FUNCTION__,orig_path);}    
+    
+    if(strstr(orig_path,"//")){
+        fix_slashes_in_place(orig_path,sub_path,1024);
+        if(orig_path){DBG_printf("[%s] Bypass w/ Pathfix: %s",func,sub_path);}        
+        return sub_path;
+    }
+    
+    if(orig_path){DBG_printf("[%s] Bypass: %s",func,orig_path);}    
     return (char*)orig_path;
 }
 

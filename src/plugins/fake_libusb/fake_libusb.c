@@ -29,7 +29,7 @@ typedef struct usb_dev_fake_handle usb_dev_fakehandle;
 // --- libusb0.1 Hooks ---
 
 typedef int (*usb_close_t)(struct usb_dev_handle *);
-usb_close_t next_usb_close;
+static usb_close_t next_usb_close;
 int fake_usb_close(struct usb_dev_handle * hdev){
     printf("Entering [%s]\n",__FUNCTION__);
     if(hdev->fd == ID_FAKE_USB_DEVICE){
@@ -40,7 +40,7 @@ int fake_usb_close(struct usb_dev_handle * hdev){
 }
 
 typedef int (*usb_bulk_write_t)(usb_dev_handle *dev, int ep, char *bytes, int size, int timeout);
-usb_bulk_write_t next_usb_bulk_write;
+static usb_bulk_write_t next_usb_bulk_write;
 int fake_usb_bulk_write(usb_dev_handle *dev, int ep, char *bytes, int size, int timeout){
     printf("Entering [%s]\n",__FUNCTION__);    
     if(dev->fd == ID_FAKE_USB_DEVICE){
@@ -52,7 +52,7 @@ int fake_usb_bulk_write(usb_dev_handle *dev, int ep, char *bytes, int size, int 
 }
 
 typedef int (*usb_bulk_read_t)(usb_dev_handle *dev, int ep, char *bytes, int size, int timeout);
-usb_bulk_read_t next_usb_bulk_read;
+static usb_bulk_read_t next_usb_bulk_read;
 int fake_usb_bulk_read(usb_dev_handle *dev, int ep, char *bytes, int size, int timeout){
     printf("Entering [%s]\n",__FUNCTION__);    
     if(dev->fd == ID_FAKE_USB_DEVICE){
@@ -77,7 +77,7 @@ int fake_usb_control_msg(usb_dev_handle *dev, int requesttype, int request, int 
 }
 
 typedef int (*usb_set_configuration_t)(usb_dev_handle *dev, int configuration);
-usb_set_configuration_t next_usb_set_configuration;
+static usb_set_configuration_t next_usb_set_configuration;
 int fake_usb_set_configuration(struct usb_dev_handle * dev, int config){
     printf("Entering [%s]\n",__FUNCTION__);
     if(dev->fd == ID_FAKE_USB_DEVICE){
@@ -88,7 +88,7 @@ int fake_usb_set_configuration(struct usb_dev_handle * dev, int config){
 }
 
 typedef int (*usb_claim_interface_t)(usb_dev_handle *dev, int interface);
-usb_claim_interface_t next_usb_claim_interface;
+static usb_claim_interface_t next_usb_claim_interface;
 int fake_usb_claim_interface(struct usb_dev_handle * dev,int interface){    
     printf("Entering [%s]\n",__FUNCTION__);
     if(dev->fd == ID_FAKE_USB_DEVICE){
@@ -99,7 +99,7 @@ int fake_usb_claim_interface(struct usb_dev_handle * dev,int interface){
 }
 
 typedef int (*usb_release_interface_t)(usb_dev_handle *dev, int interface);
-usb_release_interface_t next_usb_release_interface;
+static usb_release_interface_t next_usb_release_interface;
 int fake_usb_release_interface(struct usb_dev_handle * dev,int interface){
     printf("Entering [%s]\n",__FUNCTION__);
     if(dev->fd == ID_FAKE_USB_DEVICE){
@@ -110,7 +110,7 @@ int fake_usb_release_interface(struct usb_dev_handle * dev,int interface){
 }
 
 typedef int (*usb_set_altinterface_t)(usb_dev_handle *dev, int alternate);
-usb_set_altinterface_t next_usb_set_altinterface;
+static usb_set_altinterface_t next_usb_set_altinterface;
 int fake_usb_set_altinterface(struct usb_dev_handle * dev,int alternate){
     printf("Entering [%s]\n",__FUNCTION__);
     if(dev->fd == ID_FAKE_USB_DEVICE){
@@ -121,7 +121,7 @@ int fake_usb_set_altinterface(struct usb_dev_handle * dev,int alternate){
 }
 
 typedef int (*usb_resetep_t)(usb_dev_handle *dev, unsigned int ep);
-usb_resetep_t next_usb_resetep;
+static usb_resetep_t next_usb_resetep;
 int fake_usb_resetep (usb_dev_handle *dev, unsigned int ep){
     if(dev->fd == ID_FAKE_USB_DEVICE){         
         return 0;
@@ -130,7 +130,7 @@ int fake_usb_resetep (usb_dev_handle *dev, unsigned int ep){
 }
 
 typedef int (*usb_clear_halt_t)(usb_dev_handle *dev, unsigned int ep);
-usb_clear_halt_t next_usb_clear_halt;
+static usb_clear_halt_t next_usb_clear_halt;
 int fake_usb_clear_halt(usb_dev_handle *dev, unsigned int ep){
     if(dev->fd == ID_FAKE_USB_DEVICE){         
         return 0;
@@ -139,7 +139,7 @@ int fake_usb_clear_halt(usb_dev_handle *dev, unsigned int ep){
 }
 
 typedef int (*usb_reset_t)(usb_dev_handle *dev);
-usb_reset_t next_usb_reset;
+static usb_reset_t next_usb_reset;
 int fake_usb_reset (usb_dev_handle *dev){
     if(dev->fd == ID_FAKE_USB_DEVICE){         
         return 0;
@@ -148,7 +148,7 @@ int fake_usb_reset (usb_dev_handle *dev){
 }
 
 typedef int (*usb_init_t)(void);
-usb_init_t next_usb_init;
+static usb_init_t next_usb_init;
 static int libusb_initialized = 0;
 int fake_usb_init(void){
     if(libusb_initialized){return 0;}
@@ -158,7 +158,7 @@ int fake_usb_init(void){
 
 
 typedef usb_dev_handle * (*usb_open_ptr)(struct usb_device*);
-usb_open_ptr next_usb_open;
+static usb_open_ptr next_usb_open;
 
 usb_dev_handle * fake_usb_open(struct usb_device* dev){    
     DBG_printf("Entering [%s]\n",__FUNCTION__); 
@@ -190,7 +190,7 @@ usb_dev_handle * fake_usb_open(struct usb_device* dev){
 
 
 typedef int (*usb_find_busses_t)(void);
-usb_find_busses_t next_usb_find_busses;
+static usb_find_busses_t next_usb_find_busses;
 int fake_usb_find_busses(void){
     // First - Get Real Busses
     int num_real_busses = next_usb_find_busses();
@@ -213,7 +213,7 @@ int fake_usb_find_busses(void){
 
 
 typedef int (*usb_find_devices_t)(void);
-usb_find_devices_t next_usb_find_devices;
+static usb_find_devices_t next_usb_find_devices;
 void populate_fake_usb_device_descriptor(unsigned short vid, unsigned short pid, char usb_rev, struct usb_device* fake_device){
     DBG_printf("Entering [%s]",__FUNCTION__);
     fake_device->descriptor.bLength = sizeof(struct usb_device_descriptor);
