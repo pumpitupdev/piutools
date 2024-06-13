@@ -1,0 +1,76 @@
+[Drum Live Station Card Data Format - WIP]
+This document attempts to explain the various bytes that make up the 
+card format for Drum Live Station.
+
+At the moment, it seems that the only cards we can create unlock everything, not sure 
+if that's a bug, a feature, something unfinished, etc. but the unlock system does appear to be 
+present... it's just a matter of either initializing the card the right way OR fixing the card update
+logic to work properly.
+
+Size: (48bytes * 47 pages) = 2256 bytes 
+	Card reader page index starts at 1 because asdasdasdasdasdsa
+
+[Info Section]
+uint16 current_year (0x07E8), sometimes the game writes this value.
+uint8 player flag
+	0x10 - Player is registered. If this is unset, the game will prompt for a new name.
+uint8 plays_remaining
+	How many plays left until the card runs out. Will show the number of plays if the value is less than 100. The patch hacks this to always be 255. When this reaches zero, the game will prompt you to go transfer your data to a new card and subsequent inserts will error with an invalid card as it sets the next byte (card status).
+	
+uint32 card_status
+	This must always be 7. If it's anything else, the game will not attempt to read the card. When the card is empty, the game will set this to 8 and break the next read.
+	
+uint8 card_name[8]
+	This is an 8 character card name, represented with the index of each character (e.g. A is 0x00, B is 0x01, etc...). If a character is unprintable, the game will just leave that character blank.
+
+[Progress Section]
+	uint8 Level Test Status
+		Technically this shares bits with the next byte, but I don't know what those do.
+		The high nibble controls which songs are unlocked out of the 10 challenges.
+		0x00 = Only the first song is unlocked, 0x10 the first two are unlocked, 0x90 all 10.
+		It would make more sense for the game to use the song clear data to control this but :shrug:.
+		
+	uint8 Training Section Clear Status
+		This byte controls which training sections are unlocked and available to you.
+		0x00 Unlocks Nothing
+		0x10 Unlocks Intermediate
+		0x20 Unlocks Advanced Training (level 3)
+		0x30 Unlocks Expert
+				
+	uint8 Num Training Cleared
+		This keeps track of how many training levels have been cleared, all the way up to 105. At the moment, the code checks if this value is <= 104 and sets it to 105 instead which unlocks all training. By default, all cleared stages recieve an 'S' rank, even if you complete them and get a score on a previous credit (the game isn't saving your score for training and I'm not sure where it would anyway).
+
+[???]
+	uint8 [0x13-0x1DF] I have no idea what this section is. I had assumed it was for training grades but it's never had an effect with values.
+	
+[Grade Section]
+	0x1E0-0x88C Level Test Grade Keeping
+		The game keeps track of your daily grades by month/day. This section comprises of generally a set of 20 bytes where the bitfields control a daily entry for all 10 songs and their grades. I started mapping the bitfields here based on the first byte representing the first two songs:
+		
+		0x01 
+			A S - Both Clear 
+		0x02
+			B S - Both Clear
+		0x03
+			C S - Both Clear
+		0x04
+			D S - Both Clear 
+		0x08
+			S A - Both Clear 
+		0x10 
+			S B - Both Clear
+		0x18
+			S C - Both Clear
+		0x20 
+			S D - Both Clear
+		0x28
+			S F - Both Clear 
+		0x40
+			S S - Both Clear
+		0x80 
+			S S - Both Clear 
+	
+	0x88C-0x8B4 ???
+	
+	0x8B4 uint32 the current year (e.g. 0x7E8)
+	0x8B8-0x8CF ???
