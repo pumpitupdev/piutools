@@ -33,8 +33,8 @@ $(BUILD_ROOT)/piutools.so: $(BUILD_ROOT) $(LOADER_SOURCES)
 
 # --- Plugins ---
 
-GENERIC_PLUGINS := asound ata_hdd ata_hdd_infinity eeprom exec_blocker fake_libusb hasp \
-		   io_buttonboard io_mk5io io_mk6io locale lockchip \
+GENERIC_PLUGINS := asound ata_hdd ata_hdd_infinity dlscard eeprom exec_blocker fake_libusb hasp \
+		   io_buttonboard io_dlsio io_mk5io io_mk6io locale lockchip \
 		   network pit pumpio_udp s3d_opengl sighandler statfix system_info \
 		   ticket_dispenser
 PLUGINS := ds1963s_in_ds2480b microdog stlfix usb_profile x11_keyboard_input $(GENERIC_PLUGINS)
