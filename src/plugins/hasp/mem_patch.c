@@ -40,7 +40,7 @@ void patch_hasp_init(const uint8_t *key_data, size_t len, char* str_fids){
       patch_hasp_login_sig,
       sizeof(patch_hasp_login_sig),
       -16,
-      (void *) 0x80c0000,
+      (void *) 0x80a0000,
       (void *) 0x80f0000,
       16);
 
