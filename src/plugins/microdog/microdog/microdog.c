@@ -144,7 +144,7 @@ void MicroDog_HandlePacket(unsigned char* packet_data){
     MDGRequest req;
     memset(&req,0x00,sizeof(MDGRequest));
     MDGResponse res;
-    memset(&req,0x00,sizeof(MDGResponse));
+    memset(&res,0x00,sizeof(MDGResponse));
     // Figure out what Protocol we're using.
     unsigned int packet_version = DetectPacketVersion(packet_data);
     if(!packet_version){return;}
